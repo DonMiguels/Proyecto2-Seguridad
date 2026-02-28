@@ -1,0 +1,48 @@
+# Volumen persistente para datos de PostgreSQL
+volumes:
+  postgres_data:
+
+# Red personalizada para comunicación interna
+networks:
+  red_interna:
+    driver: bridge
+
+services:
+  # Servicio de base de datos PostgreSQL
+  db:
+    image: postgres:15
+    container_name: deliveries_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: deliveries
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - red_interna
+    # NO exponer puerto 5432 al host (comentado)
+    # ports:
+    #   - "5432:5432"
+    restart: unless-stopped
+
+  # Servicio del backend Node.js
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: deliveries_backend
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: deliveries
+      DB_USER: postgres
+      DB_PASSWORD: admin
+    ports:
+      - "3000:3000"
+    networks:
+      - red_interna
+    depends_on:
+      - db
+    restart: unless-stopped

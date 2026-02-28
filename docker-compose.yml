@@ -10,7 +10,7 @@ networks:
 services:
   # Servicio de base de datos PostgreSQL
   db:
-    image: postgres:15
+    image: postgres:17
     container_name: deliveries_db
     environment:
       POSTGRES_USER: postgres
@@ -18,7 +18,13 @@ services:
       POSTGRES_DB: deliveries
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/init.sql:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d deliveries']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
     networks:
       - red_interna
     # NO exponer puerto 5432 al host (comentado)
@@ -40,9 +46,10 @@ services:
       DB_USER: postgres
       DB_PASSWORD: admin
     ports:
-      - "3000:3000"
+      - '3000:3000'
     networks:
       - red_interna
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped

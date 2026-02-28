@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red de Deliveries - Prueba de API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .response {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚚 Red de Deliveries - Prueba de API</h1>
+    
+    <div class="container">
+        <h2>Crear Nuevo Envío</h2>
+        <form id="crearEnvioForm">
+            <div class="form-group">
+                <label for="remitente">Remitente:</label>
+                <input type="text" id="remitente" name="remitente" required>
+            </div>
+            <div class="form-group">
+                <label for="destinatario">Destinatario:</label>
+                <input type="text" id="destinatario" name="destinatario" required>
+            </div>
+            <div class="form-group">
+                <label for="direccion_destino">Dirección de Destino:</label>
+                <input type="text" id="direccion_destino" name="direccion_destino" required>
+            </div>
+            <div class="form-group">
+                <label for="peso">Peso (kg):</label>
+                <input type="number" id="peso" name="peso" step="0.01" required>
+            </div>
+            <button type="submit">Crear Envío</button>
+        </form>
+        <div id="crearResponse" class="response" style="display: none;"></div>
+    </div>
+
+    <div class="container">
+        <h2>Buscar Envío por Tracking</h2>
+        <form id="buscarEnvioForm">
+            <div class="form-group">
+                <label for="codigo_tracking">Código de Tracking:</label>
+                <input type="text" id="codigo_tracking" name="codigo_tracking" placeholder="Ej: TRK-ABC12345" required>
+            </div>
+            <button type="submit">Buscar Envío</button>
+        </form>
+        <div id="buscarResponse" class="response" style="display: none;"></div>
+    </div>
+
+    <div class="container">
+        <h2>Actualizar Estado de Envío</h2>
+        <form id="actualizarEstadoForm">
+            <div class="form-group">
+                <label for="codigo_tracking_update">Código de Tracking:</label>
+                <input type="text" id="codigo_tracking_update" name="codigo_tracking_update" placeholder="Ej: TRK-ABC12345" required>
+            </div>
+            <div class="form-group">
+                <label for="estado">Nuevo Estado:</label>
+                <select id="estado" name="estado" required>
+                    <option value="">Seleccionar estado...</option>
+                    <option value="REGISTRADO">REGISTRADO</option>
+                    <option value="EN_TRANSITO">EN_TRANSITO</option>
+                    <option value="EN_REPARTO">EN_REPARTO</option>
+                    <option value="ENTREGADO">ENTREGADO</option>
+                    <option value="CANCELADO">CANCELADO</option>
+                </select>
+            </div>
+            <button type="submit">Actualizar Estado</button>
+        </form>
+        <div id="actualizarResponse" class="response" style="display: none;"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+
+        // Función para mostrar respuestas
+        function showResponse(elementId, data, isSuccess = true) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = `response ${isSuccess ? 'success' : 'error'}`;
+            element.textContent = JSON.stringify(data, null, 2);
+        }
+
+        // Crear Envío
+        document.getElementById('crearEnvioForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = {
+                remitente: formData.get('remitente'),
+                destinatario: formData.get('destinatario'),
+                direccion_destino: formData.get('direccion_destino'),
+                peso: parseFloat(formData.get('peso'))
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/envios`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResponse('crearResponse', result, true);
+                    e.target.reset();
+                } else {
+                    showResponse('crearResponse', result, false);
+                }
+            } catch (error) {
+                showResponse('crearResponse', { error: 'Error de conexión: ' + error.message }, false);
+            }
+        });
+
+        // Buscar Envío
+        document.getElementById('buscarEnvioForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const codigo = document.getElementById('codigo_tracking').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/envios/${codigo}`);
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResponse('buscarResponse', result, true);
+                } else {
+                    showResponse('buscarResponse', result, false);
+                }
+            } catch (error) {
+                showResponse('buscarResponse', { error: 'Error de conexión: ' + error.message }, false);
+            }
+        });
+
+        // Actualizar Estado
+        document.getElementById('actualizarEstadoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const codigo = document.getElementById('codigo_tracking_update').value;
+            const estado = document.getElementById('estado').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/envios/${codigo}/estado`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ estado })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResponse('actualizarResponse', result, true);
+                    e.target.reset();
+                } else {
+                    showResponse('actualizarResponse', result, false);
+                }
+            } catch (error) {
+                showResponse('actualizarResponse', { error: 'Error de conexión: ' + error.message }, false);
+            }
+        });
+    </script>
+</body>
+</html>

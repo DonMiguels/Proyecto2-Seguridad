@@ -1,6 +1,6 @@
-const { v4: uuidv4 } = require('uuid');
-const pool = require('../config/database');
-const ENVIO_QUERIES = require('../queries/envios.queries');
+import { v4 as uuidv4 } from 'uuid';
+import pool from '../config/database.js';
+import ENVIO_QUERIES from '../queries/envios.queries.js';
 
 const crearEnvio = async (req, res) => {
   try {
@@ -13,7 +13,13 @@ const crearEnvio = async (req, res) => {
       });
     }
 
-    const codigo_tracking = `TRK-${uuidv4().substring(0, 15).toUpperCase()}`;
+    const codigo_tracking = `TRK-${uuidv4()
+      .substring(0, 18)
+      .split('-')
+      .join('')
+      .toUpperCase()
+      .match(/.{1,4}/g)
+      .join('-')}`;
 
     const query = ENVIO_QUERIES.CREAR_ENVIO;
     const values = [
@@ -114,8 +120,4 @@ const actualizarEstadoEnvio = async (req, res) => {
   }
 };
 
-module.exports = {
-  crearEnvio,
-  obtenerEnvioPorTracking,
-  actualizarEstadoEnvio,
-};
+export { crearEnvio, obtenerEnvioPorTracking, actualizarEstadoEnvio };

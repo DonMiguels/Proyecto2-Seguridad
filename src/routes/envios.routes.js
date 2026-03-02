@@ -1,10 +1,10 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
+import {
   crearEnvio,
   obtenerEnvioPorTracking,
-  actualizarEstadoEnvio
-} = require('../controllers/envio.controller');
+  actualizarEstadoEnvio,
+} from '../controllers/envio.controller.js';
 
 router.post('/envios', crearEnvio);
 
@@ -12,4 +12,4 @@ router.get('/envios/:codigo', obtenerEnvioPorTracking);
 
 router.put('/envios/:codigo/estado', actualizarEstadoEnvio);
 
-module.exports = router;
+export default router;

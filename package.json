@@ -2,11 +2,13 @@
   "name": "red-deliveries-backend",
   "version": "1.0.0",
   "description": "Backend para la Red de Deliveries",
+  "type": "module",
   "main": "docker-compose.yml",
   "scripts": {
     "start": "docker-compose up",
     "dev": "docker-compose up --build",
-    "clean": "docker-compose down -v"
+    "clean": "docker-compose down -v",
+    "debugging": "nodemon server.js"
   },
   "keywords": [
     "deliveries",

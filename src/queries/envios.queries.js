@@ -5,12 +5,12 @@ const ENVIO_QUERIES = {
     VALUES ($1, $2, $3, $4, $5)
     RETURNING *
   `,
-  
+
   // READ
   OBTENER_POR_TRACKING: `
     SELECT * FROM envios WHERE codigo_tracking = $1
   `,
-  
+
   // UPDATE
   ACTUALIZAR_ESTADO: `
     UPDATE envios 
@@ -20,4 +20,4 @@ const ENVIO_QUERIES = {
   `,
 };
 
-module.exports = ENVIO_QUERIES;
+export default ENVIO_QUERIES;

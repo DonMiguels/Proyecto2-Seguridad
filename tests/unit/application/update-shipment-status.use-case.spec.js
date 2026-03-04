@@ -15,7 +15,10 @@ describe('UpdateShipmentStatusUseCase', () => {
     const auditRepository = {
       logAction: vi.fn(),
     };
-    const useCase = new UpdateShipmentStatusUseCase(repository, auditRepository);
+    const useCase = new UpdateShipmentStatusUseCase(
+      repository,
+      auditRepository
+    );
 
     await expect(
       useCase.execute({ trackingCode: 'TRK-1', status: '' })
@@ -31,7 +34,10 @@ describe('UpdateShipmentStatusUseCase', () => {
     const auditRepository = {
       logAction: vi.fn(),
     };
-    const useCase = new UpdateShipmentStatusUseCase(repository, auditRepository);
+    const useCase = new UpdateShipmentStatusUseCase(
+      repository,
+      auditRepository
+    );
 
     await expect(
       useCase.execute({ trackingCode: 'TRK-1', status: 'EN_TRANSITO' })
@@ -62,26 +68,35 @@ describe('UpdateShipmentStatusUseCase', () => {
       logAction: vi.fn().mockResolvedValue({ id: 1 }),
     };
 
-    const useCase = new UpdateShipmentStatusUseCase(repository, auditRepository);
+    const useCase = new UpdateShipmentStatusUseCase(
+      repository,
+      auditRepository
+    );
     const result = await useCase.execute({
       trackingCode: 'TRK-1',
       status: 'EN_TRANSITO',
       userId: 'user-123',
     });
 
-    expect(repository.updateStatusByTrackingCode).toHaveBeenCalledWith({
-      trackingCode: 'TRK-1',
-      status: 'EN_TRANSITO',
-    }, queryExecutor);
-    expect(auditRepository.logAction).toHaveBeenCalledWith({
-      userId: 'user-123',
-      action: 'UPDATE_SHIPMENT_STATUS',
-      entityType: 'SHIPMENT',
-      entityId: 'TRK-1',
-      metadata: {
+    expect(repository.updateStatusByTrackingCode).toHaveBeenCalledWith(
+      {
+        trackingCode: 'TRK-1',
         status: 'EN_TRANSITO',
       },
-    }, queryExecutor);
+      queryExecutor
+    );
+    expect(auditRepository.logAction).toHaveBeenCalledWith(
+      {
+        userId: 'user-123',
+        action: 'UPDATE_SHIPMENT_STATUS',
+        entityType: 'SHIPMENT',
+        entityId: 'TRK-1',
+        metadata: {
+          status: 'EN_TRANSITO',
+        },
+      },
+      queryExecutor
+    );
     expect(result.estado).toBe('EN_TRANSITO');
   });
 });

@@ -46,7 +46,9 @@ export class PostgresRefreshTokenRepository {
   }
 
   async revokeToken(token, queryExecutor = this.databasePool) {
-    const result = await queryExecutor.query(QUERIES.REVOKE, [hashToken(token)]);
+    const result = await queryExecutor.query(QUERIES.REVOKE, [
+      hashToken(token),
+    ]);
     return result.rows[0] || null;
   }
 }

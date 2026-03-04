@@ -22,10 +22,12 @@ Se formaliza **Microservicios + Arquitectura Hexagonal (Ports & Adapters)**, con
 ## 3) Stack definido para ejecución incremental
 
 Estado actual del repo:
+
 - Node.js + Express (ESM)
 - PostgreSQL
 
 Ruta aprobada:
+
 - Mantener Node.js de forma incremental.
 - Endurecer diseño con Clean/Hexagonal sobre estructura existente.
 - Mantener migración progresiva a TypeScript para dominio/aplicación cuando se cierre Fase 4.
@@ -81,12 +83,14 @@ src/
 ## 7) Modelo de dominio inicial
 
 Entidades/agregados iniciales:
+
 - `Shipment`
 - `TrackingEvent`
 - `Route`
 - `AuditLog`
 
 Invariantes:
+
 - transiciones de estado válidas;
 - idempotencia en mutaciones críticas;
 - auditoría inmutable por actor y operación.
@@ -98,6 +102,7 @@ Invariantes:
 - `GET /api/v1/tracking/{trackingId}`
 
 Contratos:
+
 - `Authorization: Bearer <JWT>` para endpoints privados.
 - `Idempotency-Key` obligatorio en endpoints mutables.
 
@@ -125,6 +130,7 @@ $$
 ## 12) Próximo paso
 
 Continuar con **Fase 2 (Dockerización Máster)** reforzando:
+
 - multi-stage builds;
 - ejecución non-root;
 - optimización de capas y caché;

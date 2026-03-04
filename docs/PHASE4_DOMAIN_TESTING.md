@@ -3,6 +3,7 @@
 ## Primer vertical slice implementado
 
 Dominio `Shipment` con reglas de transición de estado:
+
 - `REGISTRADO -> EN_TRANSITO`
 - `EN_TRANSITO -> EN_REPARTO`
 - `EN_REPARTO -> ENTREGADO`
@@ -54,6 +55,7 @@ Dominio `Shipment` con reglas de transición de estado:
 ## Pruebas incorporadas
 
 ### Unit Tests
+
 - `tests/unit/domain/shipment.entity.spec.js`
 - `tests/unit/application/update-shipment-status.use-case.spec.js`
 - `tests/unit/shared/env.config.spec.js`
@@ -63,11 +65,13 @@ Dominio `Shipment` con reglas de transición de estado:
 - `tests/unit/application/refresh-session.use-case.spec.js`
 
 Cobertura funcional validada:
+
 - estados válidos/inválidos,
 - transiciones permitidas/prohibidas,
 - manejo de `ShipmentNotFoundError` y payload inválido.
 
 ### Integration Tests
+
 - `tests/integration/infrastructure/postgres-shipment.repository.spec.js`
   - integración repositorio PostgreSQL usando `pg-mem`.
 - `tests/integration/infrastructure/postgres-audit.repository.spec.js`

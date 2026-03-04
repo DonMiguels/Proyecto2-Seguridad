@@ -30,7 +30,9 @@ describe('PostgresRefreshTokenRepository integration', () => {
       expiresAt: new Date(Date.now() + 60_000),
     });
 
-    const isActiveBefore = await repository.isTokenActive('refresh-token-value');
+    const isActiveBefore = await repository.isTokenActive(
+      'refresh-token-value'
+    );
     expect(isActiveBefore).toBe(true);
 
     await repository.revokeToken('refresh-token-value');

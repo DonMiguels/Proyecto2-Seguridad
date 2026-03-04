@@ -18,7 +18,8 @@ export const createIdempotencyMiddleware = (idempotencyStore, options = {}) => {
     }
 
     const scopedRequestKey = buildIdempotencyScope(req, idempotencyKey);
-    const requestAlreadyProcessed = await idempotencyStore.has(scopedRequestKey);
+    const requestAlreadyProcessed =
+      await idempotencyStore.has(scopedRequestKey);
 
     if (requestAlreadyProcessed) {
       if (req.method === 'POST') {

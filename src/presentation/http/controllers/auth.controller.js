@@ -24,7 +24,10 @@ const mapErrorToHttpResponse = (error) => {
   }
 
   if (error instanceof IdentityProviderError) {
-    return { statusCode: 503, payload: { error: 'Identity provider unavailable' } };
+    return {
+      statusCode: 503,
+      payload: { error: 'Identity provider unavailable' },
+    };
   }
 
   if (error instanceof InvalidRefreshTokenError) {

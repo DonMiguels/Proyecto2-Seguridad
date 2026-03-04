@@ -13,7 +13,10 @@ const createTestApp = (controller) => {
 
   app.post('/api/v1/shipments', controller.createShipment);
   app.get('/api/v1/shipments/:codigo', controller.getShipmentByTracking);
-  app.patch('/api/v1/shipments/:codigo/status', controller.updateShipmentStatus);
+  app.patch(
+    '/api/v1/shipments/:codigo/status',
+    controller.updateShipmentStatus
+  );
 
   return app;
 };
@@ -45,7 +48,9 @@ describe('ShipmentController integration', () => {
     const controller = new ShipmentController({
       createShipmentUseCase: { execute: vi.fn() },
       getShipmentByTrackingUseCase: {
-        execute: vi.fn().mockRejectedValue(new ShipmentNotFoundError('Not found')),
+        execute: vi
+          .fn()
+          .mockRejectedValue(new ShipmentNotFoundError('Not found')),
       },
       updateShipmentStatusUseCase: { execute: vi.fn() },
     });

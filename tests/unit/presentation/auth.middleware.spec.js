@@ -20,10 +20,10 @@ const buildToken = (payload = {}) => {
     },
     JWT_CONFIG.secret,
     {
-    expiresIn: '1h',
-    issuer: JWT_CONFIG.issuer,
-    audience: JWT_CONFIG.audience,
-    subject: payload.sub || 'user-1',
+      expiresIn: '1h',
+      issuer: JWT_CONFIG.issuer,
+      audience: JWT_CONFIG.audience,
+      subject: payload.sub || 'user-1',
     }
   );
 };

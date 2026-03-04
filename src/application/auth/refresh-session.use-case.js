@@ -21,9 +21,8 @@ export class RefreshSessionUseCase {
       throw new InvalidRefreshTokenError('Invalid or expired refresh token');
     }
 
-    const isActiveToken = await this.refreshTokenRepository.isTokenActive(
-      refreshToken
-    );
+    const isActiveToken =
+      await this.refreshTokenRepository.isTokenActive(refreshToken);
 
     if (!isActiveToken) {
       throw new InvalidRefreshTokenError('Refresh token has been revoked');
@@ -38,7 +37,8 @@ export class RefreshSessionUseCase {
     };
 
     const accessToken = this.tokenService.generateAccessToken(identity);
-    const rotatedRefreshToken = this.tokenService.generateRefreshToken(identity);
+    const rotatedRefreshToken =
+      this.tokenService.generateRefreshToken(identity);
 
     await this.refreshTokenRepository.storeToken({
       token: rotatedRefreshToken,

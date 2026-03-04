@@ -30,13 +30,14 @@ export class UpdateShipmentStatusUseCase {
       const shipment = new Shipment(shipmentData);
       shipment.changeStatus(status);
 
-      const updatedShipment = await this.shipmentRepository.updateStatusByTrackingCode(
-        {
-          trackingCode,
-          status: shipment.estado,
-        },
-        queryExecutor
-      );
+      const updatedShipment =
+        await this.shipmentRepository.updateStatusByTrackingCode(
+          {
+            trackingCode,
+            status: shipment.estado,
+          },
+          queryExecutor
+        );
 
       await this.auditRepository.logAction(
         {

@@ -21,7 +21,9 @@ const validateRequiredEnv = (env) => {
   const missingKeys = REQUIRED_ENV_KEYS.filter((key) => !env[key]);
 
   if (missingKeys.length > 0) {
-    throw new Error(`Missing required environment variables: ${missingKeys.join(', ')}`);
+    throw new Error(
+      `Missing required environment variables: ${missingKeys.join(', ')}`
+    );
   }
 };
 

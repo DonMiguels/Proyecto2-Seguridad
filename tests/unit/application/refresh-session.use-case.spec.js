@@ -16,7 +16,10 @@ describe('RefreshSessionUseCase', () => {
       storeToken: vi.fn(),
     };
 
-    const useCase = new RefreshSessionUseCase(tokenService, refreshTokenRepository);
+    const useCase = new RefreshSessionUseCase(
+      tokenService,
+      refreshTokenRepository
+    );
 
     await expect(useCase.execute({ refreshToken: '' })).rejects.toThrow(
       InvalidRefreshTokenError
@@ -41,13 +44,18 @@ describe('RefreshSessionUseCase', () => {
       storeToken: vi.fn().mockResolvedValue({}),
     };
 
-    const useCase = new RefreshSessionUseCase(tokenService, refreshTokenRepository);
+    const useCase = new RefreshSessionUseCase(
+      tokenService,
+      refreshTokenRepository
+    );
 
     const result = await useCase.execute({ refreshToken: 'old-refresh' });
 
     expect(result.accessToken).toBe('new-access');
     expect(result.refreshToken).toBe('new-refresh');
-    expect(refreshTokenRepository.revokeToken).toHaveBeenCalledWith('old-refresh');
+    expect(refreshTokenRepository.revokeToken).toHaveBeenCalledWith(
+      'old-refresh'
+    );
     expect(refreshTokenRepository.storeToken).toHaveBeenCalled();
   });
 
@@ -69,7 +77,10 @@ describe('RefreshSessionUseCase', () => {
       storeToken: vi.fn(),
     };
 
-    const useCase = new RefreshSessionUseCase(tokenService, refreshTokenRepository);
+    const useCase = new RefreshSessionUseCase(
+      tokenService,
+      refreshTokenRepository
+    );
 
     await expect(
       useCase.execute({ refreshToken: 'revoked-refresh' })

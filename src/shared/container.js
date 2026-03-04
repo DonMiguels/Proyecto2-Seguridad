@@ -111,8 +111,14 @@ export const createContainer = () => {
     audience: env.auth.jwtAudience,
     accessTokenBlacklistStore,
   });
-  const createShipmentRoleMiddleware = createRoleMiddleware(['MOSTRADOR', 'ADMIN']);
-  const updateShipmentRoleMiddleware = createRoleMiddleware(['DESPACHO', 'ADMIN']);
+  const createShipmentRoleMiddleware = createRoleMiddleware([
+    'MOSTRADOR',
+    'ADMIN',
+  ]);
+  const updateShipmentRoleMiddleware = createRoleMiddleware([
+    'DESPACHO',
+    'ADMIN',
+  ]);
 
   return {
     authController,

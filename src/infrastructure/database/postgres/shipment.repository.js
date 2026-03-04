@@ -50,10 +50,9 @@ export class PostgresShipmentRepository {
   }
 
   async findByTrackingCode(trackingCode, queryExecutor = this.databasePool) {
-    const result = await queryExecutor.query(
-      QUERIES.FIND_BY_TRACKING_CODE,
-      [trackingCode]
-    );
+    const result = await queryExecutor.query(QUERIES.FIND_BY_TRACKING_CODE, [
+      trackingCode,
+    ]);
     return result.rows[0] || null;
   }
 

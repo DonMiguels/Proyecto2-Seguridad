@@ -17,7 +17,9 @@ export class LogoutSessionUseCase {
     await this.refreshTokenRepository.revokeToken(refreshToken);
 
     const decodedAccessToken =
-      accessToken && this.tokenService ? this.tokenService.decodeToken(accessToken) : null;
+      accessToken && this.tokenService
+        ? this.tokenService.decodeToken(accessToken)
+        : null;
     if (
       decodedAccessToken?.jti &&
       decodedAccessToken?.exp &&

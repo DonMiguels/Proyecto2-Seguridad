@@ -16,7 +16,8 @@ const readBearerToken = (headerValue) => {
 };
 
 export const createJwtAuthMiddleware = (options) => {
-  const { key, algorithms, issuer, audience, accessTokenBlacklistStore } = options;
+  const { key, algorithms, issuer, audience, accessTokenBlacklistStore } =
+    options;
 
   return async (req, res, next) => {
     const authorizationHeader = req.get(AUTH_HEADER);
@@ -42,7 +43,9 @@ export const createJwtAuthMiddleware = (options) => {
       }
 
       if (accessTokenBlacklistStore) {
-        const revoked = await accessTokenBlacklistStore.isBlacklisted(payload.jti);
+        const revoked = await accessTokenBlacklistStore.isBlacklisted(
+          payload.jti
+        );
         if (revoked) {
           return res.status(401).json({
             error: 'Token has been revoked',

@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
 import ENVIO_QUERIES from '../queries/envios.queries.js';
+import logger from '../utils/logger.js';
 
 const crearEnvio = async (req, res) => {
   try {
@@ -38,7 +39,7 @@ const crearEnvio = async (req, res) => {
       envio: nuevoEnvio,
     });
   } catch (error) {
-    console.error('Error al crear envío:', error);
+    logger.error('Error al crear envío:', error);
     res.status(500).json({
       error: 'Error interno del servidor al crear el envío',
     });
@@ -64,7 +65,7 @@ const obtenerEnvioPorTracking = async (req, res) => {
       envio,
     });
   } catch (error) {
-    console.error('Error al obtener envío:', error);
+    logger.error('Error al obtener envío:', error);
     res.status(500).json({
       error: 'Error interno del servidor al obtener el envío',
     });
@@ -113,7 +114,7 @@ const actualizarEstadoEnvio = async (req, res) => {
       envio,
     });
   } catch (error) {
-    console.error('Error al actualizar estado del envío:', error);
+    logger.error('Error al actualizar estado del envío:', error);
     res.status(500).json({
       error: 'Error interno del servidor al actualizar el estado del envío',
     });

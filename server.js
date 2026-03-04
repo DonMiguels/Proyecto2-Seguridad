@@ -1,22 +1,24 @@
-import dotenv from 'dotenv';
-import app from './src/app.js';
+import createApp from './src/app.js';
 import pool from './src/config/database.js';
+import { getEnvironmentConfig } from './src/shared/config/env.js';
+import logger from './src/utils/logger.js';
 
-dotenv.config();
-
-const PORT = process.env.PORT || 3000;
+const env = getEnvironmentConfig();
+const PORT = env.port;
 
 const startServer = async () => {
   try {
     await pool.connect();
-    console.log('Conexión a la base de datos establecida exitosamente.');
+    logger.info('Conexión a la base de datos establecida exitosamente.');
+
+    const app = createApp();
 
     app.listen(PORT, () => {
-      console.log(`Servidor corriendo en el puerto ${PORT}`);
-      console.log(`API disponible en http://localhost:${PORT}/api`);
+      logger.info(`Servidor corriendo en el puerto ${PORT}`);
+      logger.info(`API disponible en http://localhost:${PORT}/api`);
     });
   } catch (error) {
-    console.error('Error al iniciar el servidor:', error);
+    logger.error('Error al iniciar el servidor:', error);
     process.exit(1);
   }
 };

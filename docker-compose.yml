@@ -1,55 +1,140 @@
-# Volumen persistente para datos de PostgreSQL
 volumes:
   postgres_data:
+  redis_data:
+  node_modules:
 
-# Red personalizada para comunicación interna
 networks:
-  red_interna:
+  app_net:
     driver: bridge
+  storage_net:
+    driver: bridge
+    internal: true
 
 services:
-  # Servicio de base de datos PostgreSQL
   db:
-    image: postgres:17
+    image: postgres:17-alpine
     container_name: deliveries_db
+    init: true
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: deliveries
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-admin}
+      POSTGRES_DB: ${DB_NAME:-deliveries}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d deliveries']
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-deliveries}"]
       interval: 5s
       timeout: 3s
       retries: 10
       start_period: 10s
     networks:
-      - red_interna
-    # NO exponer puerto 5432 al host (comentado)
-    # ports:
-    #   - "5432:5432"
+      - storage_net
     restart: unless-stopped
 
-  # Servicio del backend Node.js
+  redis:
+    image: redis:7-alpine
+    container_name: deliveries_redis
+    init: true
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    networks:
+      - storage_net
+    restart: unless-stopped
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile
+      target: production
     container_name: deliveries_backend
+    init: true
+    env_file:
+      - .env.docker
     environment:
-      PORT: 3000
+      NODE_ENV: production
+      PORT: ${PORT:-3000}
       DB_HOST: db
       DB_PORT: 5432
-      DB_NAME: deliveries
-      DB_USER: postgres
-      DB_PASSWORD: admin
-    ports:
-      - '3000:3000'
+      DB_NAME: ${DB_NAME:-deliveries}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-admin}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      LOG_GMT_OFFSET: ${LOG_GMT_OFFSET:--4}
+    expose:
+      - "3000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('net').createConnection(3000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))\"",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 15s
     networks:
-      - red_interna
+      - app_net
+      - storage_net
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
     restart: unless-stopped
+    profiles: ['prod']
+
+  backend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: deliveries_backend_dev
+    init: true
+    env_file:
+      - .env.docker
+    environment:
+      NODE_ENV: development
+      PORT: ${PORT:-3000}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-deliveries}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-admin}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      LOG_GMT_OFFSET: ${LOG_GMT_OFFSET:--4}
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ./:/app
+      - node_modules:/app/node_modules
+    networks:
+      - app_net
+      - storage_net
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+    profiles: ['dev']

@@ -3,12 +3,19 @@
   "version": "1.0.0",
   "description": "Backend para la Red de Deliveries",
   "type": "module",
-  "main": "docker-compose.yml",
+  "main": "server.js",
   "scripts": {
-    "start": "docker-compose up",
-    "dev": "docker-compose up --build",
-    "clean": "docker-compose down -v",
-    "debugging": "nodemon server.js"
+    "start": "docker-compose --profile prod up --build",
+    "dev": "docker-compose --profile dev up --build",
+    "clean": "docker-compose down -v --remove-orphans",
+    "debugging": "nodemon server.js",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration"
   },
   "keywords": [
     "deliveries",
@@ -20,12 +27,22 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
-    "pg": "^8.11.3",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.3",
+    "ldapts": "^8.1.7",
+    "pg": "^8.11.3",
+    "redis": "^5.11.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.31.0",
+    "nodemon": "^3.0.2",
+    "pg-mem": "^3.0.5",
+    "prettier": "^3.5.3",
+    "supertest": "^7.1.4",
+    "vitest": "^3.2.4"
   }
 }

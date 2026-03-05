@@ -19,6 +19,7 @@ services:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-admin}
       POSTGRES_DB: ${DB_NAME:-deliveries}
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -73,8 +74,8 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       LOG_GMT_OFFSET: ${LOG_GMT_OFFSET:--4}
-    expose:
-      - '3000'
+    ports:
+      - '${PORT:-3000}:3000'
     healthcheck:
       test:
         [

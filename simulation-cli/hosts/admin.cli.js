@@ -20,7 +20,10 @@ export async function obtenerMetricas() {
 
   const abiertas = tickets.filter((t) => t.estado === 'ABIERTO').length;
   const liberados = shipments.filter((s) => s.estado === 'LIBERADO').length;
-  const facturacion = sales.reduce((acc, sale) => acc + Number(sale.precio || 0), 0);
+  const facturacion = sales.reduce(
+    (acc, sale) => acc + Number(sale.precio || 0),
+    0
+  );
 
   return {
     enviosTotales: shipments.length,

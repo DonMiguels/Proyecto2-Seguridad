@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { appendJsonArray, readJson } from '../../../simulation-cli/lib/store.js';
+import {
+  appendJsonArray,
+  readJson,
+} from '../../../simulation-cli/lib/store.js';
 import { handleOption } from '../../../simulation-cli/hosts/atencion.cli.js';
 import {
   createMockCli,

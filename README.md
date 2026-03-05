@@ -30,11 +30,13 @@ server.js                # Punto de entrada del servidor
 ## Instalación
 
 1. Copiar el archivo de variables de entorno:
+
 ```bash
 cp .env.example .env
 ```
 
 2. Configurar las variables de entorno en el archivo `.env`:
+
 ```
 PORT=3000
 DB_HOST=localhost
@@ -45,16 +47,19 @@ DB_PASSWORD=tu_contraseña
 ```
 
 3. Instalar dependencias:
+
 ```bash
 npm install
 ```
 
 4. Iniciar el servidor:
+
 ```bash
 npm start
 ```
 
 Para desarrollo con auto-reinicio:
+
 ```bash
 npm run dev
 ```
@@ -118,6 +123,7 @@ El host `admin` consume métricas simuladas compartidas por volumen desde los ot
 ### Envíos
 
 - `POST /api/envios` - Crear un nuevo envío
+
   ```json
   {
     "remitente": "Juan Pérez",
@@ -128,6 +134,7 @@ El host `admin` consume métricas simuladas compartidas por volumen desde los ot
   ```
 
 - `GET /api/envios/:codigo` - Obtener envío por código de tracking
+
   ```
   GET /api/envios/TRK-ABC12345
   ```
@@ -150,6 +157,7 @@ El host `admin` consume métricas simuladas compartidas por volumen desde los ot
 ## Base de Datos
 
 El modelo `Envio` contiene los siguientes campos:
+
 - `id` (UUID, primary key)
 - `codigo_tracking` (string, único)
 - `remitente` (string)

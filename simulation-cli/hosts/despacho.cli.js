@@ -1,4 +1,9 @@
-import { appendJsonArray, dataFile, readJson, writeJson } from '../lib/store.js';
+import {
+  appendJsonArray,
+  dataFile,
+  readJson,
+  writeJson,
+} from '../lib/store.js';
 import { createCli, nowIso, randomCode } from '../lib/cli.js';
 import { pathToFileURL } from 'node:url';
 
@@ -67,7 +72,9 @@ export async function listarEnvios() {
   }
 
   shipments.slice(-10).forEach((s) => {
-    console.log(`${s.tracking} | ${s.estado} | ${s.remitente} -> ${s.destinatario}`);
+    console.log(
+      `${s.tracking} | ${s.estado} | ${s.remitente} -> ${s.destinatario}`
+    );
   });
   console.log();
 }

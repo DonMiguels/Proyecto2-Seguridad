@@ -27,7 +27,9 @@ describe('Host Admin CLI', () => {
 
   it('debe calcular métricas globales', async () => {
     await appendJsonArray(`${tempDir}/shipments.json`, { estado: 'LIBERADO' });
-    await appendJsonArray(`${tempDir}/shipments.json`, { estado: 'REGISTRADO' });
+    await appendJsonArray(`${tempDir}/shipments.json`, {
+      estado: 'REGISTRADO',
+    });
     await appendJsonArray(`${tempDir}/sales.json`, { precio: 100 });
     await appendJsonArray(`${tempDir}/sales.json`, { precio: 50 });
     await appendJsonArray(`${tempDir}/tickets.json`, { estado: 'ABIERTO' });

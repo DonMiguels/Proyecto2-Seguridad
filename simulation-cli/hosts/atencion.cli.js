@@ -1,4 +1,9 @@
-import { appendJsonArray, dataFile, readJson, writeJson } from '../lib/store.js';
+import {
+  appendJsonArray,
+  dataFile,
+  readJson,
+  writeJson,
+} from '../lib/store.js';
 import { createCli, nowIso, randomCode } from '../lib/cli.js';
 import { pathToFileURL } from 'node:url';
 

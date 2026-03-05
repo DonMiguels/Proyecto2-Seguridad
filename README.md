@@ -59,7 +59,61 @@ Para desarrollo con auto-reinicio:
 npm run dev
 ```
 
+## Testing de Simulación CLI
+
+Framework elegido: **Vitest** (alineado al stack Node.js existente), usando mocks de I/O para simular `stdin/stdout` sin bloquear la ejecución.
+
+### Ejecutar pruebas localmente
+
+```bash
+npm install
+npm run test:simulation
+```
+
+### Ejecutar pruebas en Docker (perfil testing)
+
+```bash
+docker-compose --profile testing run --rm simulation-tests
+```
+
+La suite incluye:
+
+- Unit tests para `Despacho`, `Mostrador`, `Atención` y `Admin`.
+- Integration tests para validar flujo de datos entre hosts y visibilidad en `Admin`.
+
 ## API Endpoints
+
+## Simulación de Hosts por CLI (Docker Attach)
+
+Se agregó un perfil de simulación con 4 hosts CLI interactivos:
+
+- `host_despacho`
+- `host_mostrador`
+- `host_atencion`
+- `host_admin`
+
+### Levantar entorno de simulación
+
+```bash
+docker compose --profile simulation up -d --build
+```
+
+### Adjuntarse a un host
+
+```bash
+docker attach host_despacho
+docker attach host_mostrador
+docker attach host_atencion
+docker attach host_admin
+```
+
+### Salir sin detener el contenedor
+
+Use la secuencia de teclas:
+
+`Ctrl+p`, luego `Ctrl+q`.
+
+El host `admin` consume métricas simuladas compartidas por volumen desde los otros 3 hosts.
 
 ### Envíos
 

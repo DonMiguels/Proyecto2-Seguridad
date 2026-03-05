@@ -2,6 +2,7 @@ volumes:
   postgres_data:
   redis_data:
   node_modules:
+  simulation_data:
 
 networks:
   app_net:
@@ -143,3 +144,85 @@ services:
       - ALL
     restart: unless-stopped
     profiles: ['dev']
+
+  host-despacho:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulation
+    container_name: host_despacho
+    init: true
+    command: ['node', 'simulation-cli/hosts/despacho.cli.js']
+    stdin_open: true
+    tty: true
+    volumes:
+      - simulation_data:/sim-data
+    networks:
+      - app_net
+    restart: unless-stopped
+    profiles: ['simulation']
+
+  host-mostrador:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulation
+    container_name: host_mostrador
+    init: true
+    command: ['node', 'simulation-cli/hosts/mostrador.cli.js']
+    stdin_open: true
+    tty: true
+    volumes:
+      - simulation_data:/sim-data
+    networks:
+      - app_net
+    restart: unless-stopped
+    profiles: ['simulation']
+
+  host-atencion:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulation
+    container_name: host_atencion
+    init: true
+    command: ['node', 'simulation-cli/hosts/atencion.cli.js']
+    stdin_open: true
+    tty: true
+    volumes:
+      - simulation_data:/sim-data
+    networks:
+      - app_net
+    restart: unless-stopped
+    profiles: ['simulation']
+
+  host-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulation
+    container_name: host_admin
+    init: true
+    command: ['node', 'simulation-cli/hosts/admin.cli.js']
+    stdin_open: true
+    tty: true
+    volumes:
+      - simulation_data:/sim-data
+    networks:
+      - app_net
+    depends_on:
+      - host-despacho
+      - host-mostrador
+      - host-atencion
+    restart: unless-stopped
+    profiles: ['simulation']
+
+  simulation-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: simulation_tests
+    init: true
+    environment:
+      NODE_ENV: test
+      SIM_DATA_DIR: /tmp/sim-data
+    command: ['npm', 'run', 'test:simulation']
+    networks:
+      - app_net
+    profiles: ['testing']

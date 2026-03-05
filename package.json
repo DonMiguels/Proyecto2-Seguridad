@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "test:simulation": "vitest run tests/unit/simulation-cli tests/integration/simulation-cli",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration"
   },

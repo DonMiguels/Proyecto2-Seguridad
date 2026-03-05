@@ -22,6 +22,10 @@ tests
 *.test.js
 *.spec.js
 
+# Permitir suite de testing dentro de Dockerfile.test
+!tests/
+!tests/**
+
 .cache
 .turbo
 .next

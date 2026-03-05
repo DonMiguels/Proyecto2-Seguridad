@@ -1,0 +1,14 @@
+FROM node:20-alpine
+
+WORKDIR /opt/sim
+
+RUN apk add --no-cache dumb-init \
+    && addgroup -S simgroup \
+    && adduser -S simuser -G simgroup
+
+COPY --chown=simuser:simgroup simulation-cli ./simulation-cli
+
+USER simuser
+
+ENTRYPOINT ["/usr/bin/dumb-init", "--"]
+CMD ["node", "simulation-cli/hosts/despacho.cli.js"]

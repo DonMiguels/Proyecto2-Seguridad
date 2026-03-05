@@ -6,6 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "docker-compose --profile prod up --build",
+    "build": "docker compose --profile prod build backend",
     "dev": "docker-compose --profile dev up --build",
     "clean": "docker-compose down -v --remove-orphans",
     "debugging": "nodemon server.js",

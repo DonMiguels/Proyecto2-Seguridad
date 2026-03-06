@@ -13,6 +13,16 @@ const QUERIES = {
     WHERE codigo_tracking = $2
     RETURNING *
   `,
+  SUMMARY_METRICS: `
+    SELECT
+      COUNT(*)::int AS total,
+      COUNT(*) FILTER (WHERE estado = 'REGISTRADO')::int AS registrado,
+      COUNT(*) FILTER (WHERE estado = 'EN_TRANSITO')::int AS en_transito,
+      COUNT(*) FILTER (WHERE estado = 'EN_REPARTO')::int AS en_reparto,
+      COUNT(*) FILTER (WHERE estado = 'ENTREGADO')::int AS entregado,
+      COUNT(*) FILTER (WHERE estado = 'CANCELADO')::int AS cancelado
+    FROM envios
+  `,
 };
 
 export class PostgresShipmentRepository {
@@ -63,5 +73,17 @@ export class PostgresShipmentRepository {
       values
     );
     return result.rows[0] || null;
+  }
+
+  async getSummaryMetrics(queryExecutor = this.databasePool) {
+    const result = await queryExecutor.query(QUERIES.SUMMARY_METRICS);
+    return result.rows[0] || {
+      total: 0,
+      registrado: 0,
+      en_transito: 0,
+      en_reparto: 0,
+      entregado: 0,
+      cancelado: 0,
+    };
   }
 }

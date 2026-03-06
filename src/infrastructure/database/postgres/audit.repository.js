@@ -4,6 +4,12 @@ const QUERIES = {
     VALUES ($1, $2, $3, $4, $5)
     RETURNING *
   `,
+  LIST_RECENT: `
+    SELECT *
+    FROM audit_logs
+    ORDER BY fecha_creacion DESC
+    LIMIT $1
+  `,
 };
 
 export class PostgresAuditRepository {
@@ -22,5 +28,11 @@ export class PostgresAuditRepository {
 
     const result = await queryExecutor.query(QUERIES.CREATE, values);
     return result.rows[0];
+  }
+
+  async listRecent(limit = 20, queryExecutor = this.databasePool) {
+    const safeLimit = Math.max(1, Math.min(100, Number(limit) || 20));
+    const result = await queryExecutor.query(QUERIES.LIST_RECENT, [safeLimit]);
+    return result.rows;
   }
 }

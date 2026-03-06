@@ -4,7 +4,7 @@
 
 Contenerización robusta para desarrollo y producción con foco en seguridad, tamaño de imagen y reproducibilidad.
 
-## Cambios implementados
+## Cambios implementados (estado actualizado)
 
 ### 1) Dockerfile multi-stage
 
@@ -22,16 +22,18 @@ Archivo: [Dockerfile](../Dockerfile)
 - `development`:
   - incluye `nodemon` y arranque con `npm run debugging`.
 
-### 2) docker-compose con perfiles
+### 2) docker-compose endurecido y segmentado
 
 Archivo: [docker-compose.yml](../docker-compose.yml)
 
-- Perfiles:
-  - `prod`: servicio `backend` (sin puerto público, solo `expose`).
-  - `dev`: servicio `backend-dev` con `ports` y bind mount del proyecto.
 - Redes segmentadas:
-  - `app_net` para capa de aplicación.
-  - `storage_net` interna (`internal: true`) para DB.
+  - `edge_net` (pública)
+  - `app_net` (`internal: true`)
+  - `identity_net` (`internal: true`)
+  - `data_net` (`internal: true`)
+- Exposición de puertos:
+  - solo `frontend` publica `8080:8080`
+  - backend/ldap/db/redis/hosts sin puertos publicados
 - DB endurecida:
   - `postgres:17-alpine`.
   - volumen persistente `postgres_data`.
@@ -44,10 +46,21 @@ Archivo: [docker-compose.yml](../docker-compose.yml)
   - `init: true`.
   - `healthcheck` por socket local.
 
+- Seguridad adicional:
+  - secretos por archivos en `secrets/*.txt` (Docker secrets)
+  - validación TLS LDAP estricta (`LDAP_TLS_REJECT_UNAUTHORIZED=true`)
+  - cadena de confianza LDAP por `NODE_EXTRA_CA_CERTS`
+
 - Servicios con init process:
   - `db`, `redis`, `backend`, `backend-dev` con `init: true` para mejor manejo de señales y procesos huérfanos.
 
-### 3) .dockerignore exhaustivo
+### 3) Gestión de secretos y material sensible
+
+- Secretos locales fuera de VCS (`secrets/*.txt`).
+- `userPassword` LDAP en bootstrap LDIF almacenado como hash `SSHA`.
+- Certificados LDAP en `ldap/certs` con CA explícita para validación estricta.
+
+### 4) .dockerignore exhaustivo
 
 Archivo: [.dockerignore](../.dockerignore)
 
@@ -55,7 +68,7 @@ Archivo: [.dockerignore](../.dockerignore)
 - excluye tests y artefactos de tooling (`tests`, `.cache`, `.next`, `.turbo`, `tmp`, `temp`).
 - excluye secretos por patrón (`.env*`) y permite explícitamente `.env.docker`.
 
-### 4) Scripts npm alineados
+### 5) Scripts npm alineados
 
 Archivo: [package.json](../package.json)
 
@@ -65,8 +78,7 @@ Archivo: [package.json](../package.json)
 
 ## Validación ejecutada
 
-- `docker-compose --profile dev config` ✅
-- `docker-compose --profile prod config` ✅
+- `docker compose config` ✅
 
 ## Notas operativas
 

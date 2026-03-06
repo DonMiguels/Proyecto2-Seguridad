@@ -2,6 +2,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+RUN addgroup -S testgroup \
+	&& adduser -S testuser -G testgroup
+
 COPY package.json package-lock.json ./
 RUN npm ci
 
@@ -9,5 +12,7 @@ COPY . .
 
 ENV NODE_ENV=test
 ENV SIM_DATA_DIR=/tmp/sim-data
+
+USER testuser
 
 CMD ["npm", "run", "test:simulation"]

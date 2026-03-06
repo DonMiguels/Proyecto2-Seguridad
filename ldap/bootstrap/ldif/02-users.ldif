@@ -1,0 +1,46 @@
+dn: uid=admin,ou=People,dc=empresa,dc=local
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: admin
+sn: Admin
+cn: Admin Delivery
+userPassword: {SSHA}8N7VUny2xOIjdja0+y/ieUyZRyvyeAPp
+
+dn: uid=despacho,ou=People,dc=empresa,dc=local
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: despacho
+sn: Despacho
+cn: Operador Despacho
+userPassword: {SSHA}Tuin7r0z6MKRhKuIOR2PFqhYQQvJkZGE
+
+dn: uid=mostrador,ou=People,dc=empresa,dc=local
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: mostrador
+sn: Mostrador
+cn: Operador Mostrador
+userPassword: {SSHA}s3L/G5+fBjb2Ip3y5C172e0h3+25BMKU
+
+dn: uid=atencion,ou=People,dc=empresa,dc=local
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: atencion
+sn: Atencion
+cn: Operador Atencion
+userPassword: {SSHA}HuVEQmzNiJOnMHQayeYCKg4TmMDBrPz8
+
+dn: cn=svc-backend,ou=ServiceAccounts,dc=empresa,dc=local
+objectClass: simpleSecurityObject
+objectClass: organizationalRole
+cn: svc-backend
+description: Backend LDAP bind service account
+userPassword: {SSHA}3oaowh2fN46vKle4H8sKzRHi/reSiYKx

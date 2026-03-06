@@ -1,109 +1,94 @@
-# Red de Deliveries - Backend
+# Red de Deliveries - Plataforma Dockerizada con OpenLDAP
 
-Backend para el sistema de gestión de deliveries construido con Node.js, Express y PostgreSQL.
+Plataforma integral para gestión de envíos con:
 
-## Tecnologías
+- Frontend público de tracking (Nginx)
+- API central (Node.js + Express)
+- PostgreSQL para datos de negocio y auditoría
+- Redis para revocación temprana de access tokens
+- OpenLDAP (LDAPS) para autenticación y autorización por roles
+- Hosts CLI operativos (Despacho, Mostrador, Atención, Admin) conectados al backend vía red interna Docker
 
-- Node.js
-- Express.js
-- PostgreSQL
-- Sequelize ORM
-- dotenv
+## Arquitectura (contenedores y redes)
 
-## Estructura del Proyecto
+```mermaid
+flowchart LR
+Internet((Usuario)) --> FE[frontend\nNginx :8080]
 
+subgraph edge_net
+FE
+end
+
+subgraph app_net
+FE --> BE[backend\nNode/Express :3000 interno]
+HD[host_despacho]
+HM[host_mostrador]
+HA[host_atencion]
+HADM[host_admin]
+HD --> BE
+HM --> BE
+HA --> BE
+HADM --> BE
+end
+
+subgraph identity_net
+BE --> LDAP[ldap\nLDAPS :636 interno]
+end
+
+subgraph data_net (internal)
+BE --> DB[(PostgreSQL)]
+BE --> REDIS[(Redis)]
+end
 ```
-src/
-├── config/
-│   └── database.js       # Configuración de Sequelize
-├── controllers/
-│   └── envio.controller.js # Controladores de envíos
-├── models/
-│   └── envio.model.js    # Modelo Sequelize de Envio
-├── routes/
-│   └── envios.routes.js  # Rutas Express
-├── services/             # (Para futuros servicios)
-└── app.js               # Configuración de Express
-server.js                # Punto de entrada del servidor
-```
 
-## Instalación
+## Pre-requisitos
 
-1. Copiar el archivo de variables de entorno:
+- Docker Engine 24+
+- Docker Compose v2
+
+Verificación rápida:
 
 ```bash
-cp .env.example .env
+docker --version
+docker compose version
 ```
 
-2. Configurar las variables de entorno en el archivo `.env`:
+## Quickstart (despliegue paso a paso)
 
-```
-PORT=3000
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=red_deliveries
-DB_USER=postgres
-DB_PASSWORD=tu_contraseña
-```
+1. Clonar el repositorio y ubicarse en la carpeta del proyecto.
 
-3. Instalar dependencias:
+1. Verificar variables de entorno:
+
+- Para Docker se usa `.env.docker`.
+- Crear secretos locales en `secrets/*.txt` (no versionados):
+  - `jwt_secret.txt`
+  - `db_password.txt`
+  - `ldap_bind_password.txt`
+  - `ldap_admin_password.txt`
+  - `ldap_config_password.txt`
+- Opcionalmente puedes crear/ajustar `.env` para ejecución local no containerizada.
+
+1. Levantar todo el stack:
 
 ```bash
-npm install
+docker compose up -d --build
 ```
 
-4. Iniciar el servidor:
+1. Confirmar estado de servicios:
 
 ```bash
-npm start
+docker compose ps
 ```
 
-Para desarrollo con auto-reinicio:
+1. Acceder al frontend público:
 
-```bash
-npm run dev
-```
+- <http://localhost:8080>
 
-## Testing de Simulación CLI
+## Uso crítico de Hosts CLI por `docker attach`
 
-Framework elegido: **Vitest** (alineado al stack Node.js existente), usando mocks de I/O para simular `stdin/stdout` sin bloquear la ejecución.
+Los hosts CLI corren en modo interactivo permanente con TTY abierto.
 
-### Ejecutar pruebas localmente
-
-```bash
-npm install
-npm run test:simulation
-```
-
-### Ejecutar pruebas en Docker (perfil testing)
-
-```bash
-docker-compose --profile testing run --rm simulation-tests
-```
-
-La suite incluye:
-
-- Unit tests para `Despacho`, `Mostrador`, `Atención` y `Admin`.
-- Integration tests para validar flujo de datos entre hosts y visibilidad en `Admin`.
-
-## API Endpoints
-
-## Simulación de Hosts por CLI (Docker Attach)
-
-Se agregó un perfil de simulación con 4 hosts CLI interactivos:
-
-- `host_despacho`
-- `host_mostrador`
-- `host_atencion`
-- `host_admin`
-
-### Levantar entorno de simulación
-
-```bash
-docker compose --profile simulation up -d --build
-```
-
-### Adjuntarse a un host
+Adjuntar sesión:
 
 ```bash
 docker attach host_despacho
@@ -112,58 +97,76 @@ docker attach host_atencion
 docker attach host_admin
 ```
 
-### Salir sin detener el contenedor
+### Salida segura sin matar el contenedor
 
-Use la secuencia de teclas:
+Para desacoplarte y dejar el host activo, usa exactamente:
 
-`Ctrl+p`, luego `Ctrl+q`.
+1. `Ctrl+p`
+2. `Ctrl+q`
 
-El host `admin` consume métricas simuladas compartidas por volumen desde los otros 3 hosts.
+No uses `Ctrl+c` si deseas mantener el proceso del host en ejecución.
 
-### Envíos
+## Credenciales por defecto (entorno Docker)
 
-- `POST /api/envios` - Crear un nuevo envío
+### LDAP (usuarios operativos)
 
-  ```json
-  {
-    "remitente": "Juan Pérez",
-    "destinatario": "María García",
-    "direccion_destino": "Calle Principal #123",
-    "peso": 2.5
-  }
-  ```
+- `admin` / `admin123` → rol `ADMIN`
+- `despacho` / `despacho123` → rol `DESPACHO`
+- `mostrador` / `mostrador123` → rol `MOSTRADOR`
+- `atencion` / `atencion123` → rol `ATENCION`
 
-- `GET /api/envios/:codigo` - Obtener envío por código de tracking
+### LDAP (administración / bind)
 
-  ```
-  GET /api/envios/TRK-ABC12345
-  ```
+- Admin LDAP: `cn=admin,dc=empresa,dc=local` / valor en `secrets/ldap_admin_password.txt`
+- Service account backend: `cn=svc-backend,ou=ServiceAccounts,dc=empresa,dc=local` / valor en `secrets/ldap_bind_password.txt`
 
-- `PUT /api/envios/:codigo/estado` - Actualizar estado de envío
-  ```json
-  {
-    "estado": "EN_TRANSITO"
-  }
-  ```
+### Base de datos PostgreSQL
 
-## Estados de Envío
+- Host interno Docker: `db`
+- Puerto interno: `5432`
+- DB: `deliveries`
+- Usuario: `postgres`
+- Password: valor en `secrets/db_password.txt`
 
-- `REGISTRADO` - Envío registrado en el sistema
-- `EN_TRANSITO` - Envío en tránsito
-- `EN_REPARTO` - Envío en reparto
-- `ENTREGADO` - Envío entregado
-- `CANCELADO` - Envío cancelado
+> Nota: en bootstrap LDAP los `userPassword` se almacenan como hash SSHA y el backend valida TLS LDAP con CA confiable (`LDAP_TLS_REJECT_UNAUTHORIZED=true`).
 
-## Base de Datos
+## Endpoints principales
 
-El modelo `Envio` contiene los siguientes campos:
+- API v1 autenticación: `/api/v1/auth/login`, `/api/v1/auth/refresh`, `/api/v1/auth/logout`
+- API v1 envíos: `/api/v1/shipments`, `/api/v1/shipments/:codigo`, `/api/v1/shipments/:codigo/status`
+- API v1 admin: `/api/v1/admin/metrics`, `/api/v1/admin/activity`
+- JWKS: `/api/v1/.well-known/jwks.json`
+- Legacy: `/api/envios/*`, `/api/auth/*`
 
-- `id` (UUID, primary key)
-- `codigo_tracking` (string, único)
-- `remitente` (string)
-- `destinatario` (string)
-- `direccion_destino` (string)
-- `peso` (float)
-- `estado` (enum)
-- `fecha_creacion` (date)
-- `fecha_actualizacion` (date)
+## Operación útil
+
+```bash
+# Ver logs en tiempo real
+docker compose logs -f
+
+# Reiniciar un host CLI puntual
+docker compose restart host-despacho
+
+# Bajar stack sin borrar volúmenes
+docker compose down
+
+# Bajar stack y borrar volúmenes (reseteo completo)
+docker compose down -v
+```
+
+## Pruebas
+
+```bash
+npm test
+npm run test:unit
+npm run test:integration
+npm run test:simulation
+```
+
+## Documentación técnica detallada
+
+- `docs/arquitectura_y_redes.md`
+- `docs/servicios_cli.md`
+- `docs/autenticacion_ldap.md`
+- `docs/flujo_de_datos.md`
+- `docs/TECHNICAL_DOCUMENTATION.md`

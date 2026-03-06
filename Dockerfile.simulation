@@ -8,6 +8,8 @@ RUN apk add --no-cache dumb-init \
 
 COPY --chown=simuser:simgroup simulation-cli ./simulation-cli
 
+ENV NODE_ENV=production
+
 USER simuser
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]

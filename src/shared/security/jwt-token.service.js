@@ -12,6 +12,17 @@ export class JwtTokenService {
 
   generateAccessToken(user) {
     const signingConfig = this.jwtKeysetService.getSigningConfig();
+    const signingOptions = {
+      algorithm: signingConfig.algorithm,
+      issuer: this.issuer,
+      audience: this.audience,
+      subject: user.id,
+      expiresIn: this.accessTokenExpiresIn,
+    };
+
+    if (signingConfig.keyid) {
+      signingOptions.keyid = signingConfig.keyid;
+    }
 
     return jwt.sign(
       {
@@ -21,19 +32,23 @@ export class JwtTokenService {
         username: user.username,
       },
       signingConfig.key,
-      {
-        algorithm: signingConfig.algorithm,
-        keyid: signingConfig.keyid,
-        issuer: this.issuer,
-        audience: this.audience,
-        subject: user.id,
-        expiresIn: this.accessTokenExpiresIn,
-      }
+      signingOptions
     );
   }
 
   generateRefreshToken(user) {
     const signingConfig = this.jwtKeysetService.getSigningConfig();
+    const signingOptions = {
+      algorithm: signingConfig.algorithm,
+      issuer: this.issuer,
+      audience: this.audience,
+      subject: user.id,
+      expiresIn: this.refreshTokenExpiresIn,
+    };
+
+    if (signingConfig.keyid) {
+      signingOptions.keyid = signingConfig.keyid;
+    }
 
     return jwt.sign(
       {
@@ -43,14 +58,7 @@ export class JwtTokenService {
         username: user.username,
       },
       signingConfig.key,
-      {
-        algorithm: signingConfig.algorithm,
-        keyid: signingConfig.keyid,
-        issuer: this.issuer,
-        audience: this.audience,
-        subject: user.id,
-        expiresIn: this.refreshTokenExpiresIn,
-      }
+      signingOptions
     );
   }
 

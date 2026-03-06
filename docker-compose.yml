@@ -1,58 +1,65 @@
 volumes:
   postgres_data:
   redis_data:
-  node_modules:
-  simulation_data:
+  ldap_data:
+  ldap_config:
+
+secrets:
+  jwt_secret:
+    file: ./secrets/jwt_secret.txt
+  db_password:
+    file: ./secrets/db_password.txt
+  ldap_bind_password:
+    file: ./secrets/ldap_bind_password.txt
+  ldap_admin_password:
+    file: ./secrets/ldap_admin_password.txt
+  ldap_config_password:
+    file: ./secrets/ldap_config_password.txt
 
 networks:
+  edge_net:
+    driver: bridge
   app_net:
     driver: bridge
-  storage_net:
+    internal: true
+  identity_net:
+    driver: bridge
+    internal: true
+  data_net:
     driver: bridge
     internal: true
 
 services:
-  db:
-    image: postgres:17-alpine
-    container_name: deliveries_db
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: deliveries_frontend
     init: true
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-admin}
-      POSTGRES_DB: ${DB_NAME:-deliveries}
-      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - '8080:8080'
+    networks:
+      - edge_net
+      - app_net
+    depends_on:
+      backend:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
     healthcheck:
       test:
-        [
-          'CMD-SHELL',
-          'pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-deliveries}',
-        ]
-      interval: 5s
+        ['CMD-SHELL', 'wget -q -O - http://127.0.0.1:8080/healthz || exit 1']
+      interval: 10s
       timeout: 3s
-      retries: 10
-      start_period: 10s
-    networks:
-      - storage_net
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    container_name: deliveries_redis
-    init: true
-    command: ['redis-server', '--appendonly', 'yes']
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 5s
-    networks:
-      - storage_net
+      retries: 5
+      start_period: 15s
     restart: unless-stopped
 
   backend:
@@ -65,18 +72,53 @@ services:
     env_file:
       - .env.docker
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-production}
       PORT: ${PORT:-3000}
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-deliveries}
       DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-admin}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      LDAP_URL: ${LDAP_URL:-ldaps://ldap:636}
+      LDAP_BASE_DN: ${LDAP_BASE_DN:-dc=empresa,dc=local}
+      LDAP_USER_ATTRIBUTE: ${LDAP_USER_ATTRIBUTE:-uid}
+      LDAP_BIND_DN: ${LDAP_BIND_DN}
+      LDAP_BIND_PASSWORD_FILE: /run/secrets/ldap_bind_password
+      LDAP_ROLE_MAPPING: ${LDAP_ROLE_MAPPING}
+      LDAP_TLS_REJECT_UNAUTHORIZED: ${LDAP_TLS_REJECT_UNAUTHORIZED:-true}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_SECRET_FILE: /run/secrets/jwt_secret
+      JWT_ISSUER: ${JWT_ISSUER:-deliveries-api}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-deliveries-clients}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
       LOG_GMT_OFFSET: ${LOG_GMT_OFFSET:--4}
-    ports:
-      - '${PORT:-3000}:3000'
+      NODE_EXTRA_CA_CERTS: /etc/ssl/certs/ldap-ca.crt
+    networks:
+      - app_net
+      - identity_net
+      - data_net
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ldap:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./ldap/certs/ca.crt:/etc/ssl/certs/ldap-ca.crt:ro
+    secrets:
+      - jwt_secret
+      - db_password
+      - ldap_bind_password
     healthcheck:
       test:
         [
@@ -86,14 +128,116 @@ services:
       interval: 10s
       timeout: 3s
       retries: 6
-      start_period: 15s
+      start_period: 20s
+    restart: unless-stopped
+
+  db:
+    image: postgres:17-alpine
+    container_name: deliveries_db
+    init: true
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_DB: ${DB_NAME:-deliveries}
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - data_net
+    secrets:
+      - db_password
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-deliveries}',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: deliveries_redis
+    init: true
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redis_data:/data
+    networks:
+      - data_net
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
+  ldap:
+    image: osixia/openldap:1.5.0
+    container_name: deliveries_ldap
+    init: true
+    environment:
+      LDAP_ORGANISATION: Empresa Deliveries
+      LDAP_DOMAIN: empresa.local
+      LDAP_BASE_DN: dc=empresa,dc=local
+      LDAP_ADMIN_PASSWORD_FILE: /run/secrets/ldap_admin_password
+      LDAP_CONFIG_PASSWORD_FILE: /run/secrets/ldap_config_password
+      LDAP_TLS: 'true'
+      LDAP_TLS_ENFORCE: 'true'
+      LDAP_TLS_VERIFY_CLIENT: never
+      LDAP_REMOVE_CONFIG_AFTER_SETUP: 'false'
+      LDAP_TLS_CRT_FILENAME: server.crt
+      LDAP_TLS_KEY_FILENAME: server.key
+      LDAP_TLS_CA_CRT_FILENAME: ca.crt
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+      - ./ldap/bootstrap/ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom:ro
+      - ./ldap/certs:/container/service/slapd/assets/certs:ro
+    networks:
+      - identity_net
+    secrets:
+      - ldap_admin_password
+      - ldap_config_password
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'LDAPTLS_CACERT=/container/service/slapd/assets/certs/ca.crt LDAPTLS_REQCERT=demand ldapsearch -x -H ldaps://127.0.0.1:636 -D "cn=admin,dc=empresa,dc=local" -y /run/secrets/ldap_admin_password -b "dc=empresa,dc=local" "(objectClass=*)" >/dev/null 2>&1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+
+  host-despacho:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulation
+    container_name: host_despacho
+    init: true
+    command: ['node', 'simulation-cli/hosts/despacho.cli.js']
+    environment:
+      SIM_API_BASE_URL: http://backend:3000/api/v1
+    stdin_open: true
+    tty: true
     networks:
       - app_net
-      - storage_net
     depends_on:
-      db:
-        condition: service_healthy
-      redis:
+      backend:
         condition: service_healthy
     security_opt:
       - no-new-privileges:true
@@ -103,63 +247,6 @@ services:
     tmpfs:
       - /tmp
     restart: unless-stopped
-    profiles: ['prod']
-
-  backend-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: development
-    container_name: deliveries_backend_dev
-    init: true
-    env_file:
-      - .env.docker
-    environment:
-      NODE_ENV: development
-      PORT: ${PORT:-3000}
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME:-deliveries}
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-admin}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      LOG_GMT_OFFSET: ${LOG_GMT_OFFSET:--4}
-    ports:
-      - '${PORT:-3000}:3000'
-    volumes:
-      - ./:/app
-      - node_modules:/app/node_modules
-    networks:
-      - app_net
-      - storage_net
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    security_opt:
-      - no-new-privileges:true
-    cap_drop:
-      - ALL
-    restart: unless-stopped
-    profiles: ['dev']
-
-  host-despacho:
-    build:
-      context: .
-      dockerfile: Dockerfile.simulation
-    container_name: host_despacho
-    init: true
-    command: ['node', 'simulation-cli/hosts/despacho.cli.js']
-    stdin_open: true
-    tty: true
-    volumes:
-      - simulation_data:/sim-data
-    networks:
-      - app_net
-    restart: unless-stopped
-    profiles: ['simulation']
 
   host-mostrador:
     build:
@@ -168,14 +255,23 @@ services:
     container_name: host_mostrador
     init: true
     command: ['node', 'simulation-cli/hosts/mostrador.cli.js']
+    environment:
+      SIM_API_BASE_URL: http://backend:3000/api/v1
     stdin_open: true
     tty: true
-    volumes:
-      - simulation_data:/sim-data
     networks:
       - app_net
+    depends_on:
+      backend:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
     restart: unless-stopped
-    profiles: ['simulation']
 
   host-atencion:
     build:
@@ -184,14 +280,23 @@ services:
     container_name: host_atencion
     init: true
     command: ['node', 'simulation-cli/hosts/atencion.cli.js']
+    environment:
+      SIM_API_BASE_URL: http://backend:3000/api/v1
     stdin_open: true
     tty: true
-    volumes:
-      - simulation_data:/sim-data
     networks:
       - app_net
+    depends_on:
+      backend:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
     restart: unless-stopped
-    profiles: ['simulation']
 
   host-admin:
     build:
@@ -200,29 +305,20 @@ services:
     container_name: host_admin
     init: true
     command: ['node', 'simulation-cli/hosts/admin.cli.js']
+    environment:
+      SIM_API_BASE_URL: http://backend:3000/api/v1
     stdin_open: true
     tty: true
-    volumes:
-      - simulation_data:/sim-data
     networks:
       - app_net
     depends_on:
-      - host-despacho
-      - host-mostrador
-      - host-atencion
+      backend:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
     restart: unless-stopped
-    profiles: ['simulation']
-
-  simulation-tests:
-    build:
-      context: .
-      dockerfile: Dockerfile.test
-    container_name: simulation_tests
-    init: true
-    environment:
-      NODE_ENV: test
-      SIM_DATA_DIR: /tmp/sim-data
-    command: ['npm', 'run', 'test:simulation']
-    networks:
-      - app_net
-    profiles: ['testing']

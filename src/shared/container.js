@@ -17,6 +17,7 @@ import { createIdempotencyMiddleware } from '../presentation/http/middlewares/id
 import { createJwtAuthMiddleware } from '../presentation/http/middlewares/auth.middleware.js';
 import { createRoleMiddleware } from '../presentation/http/middlewares/role.middleware.js';
 import { AuthController } from '../presentation/http/controllers/auth.controller.js';
+import { AdminController } from '../presentation/http/controllers/admin.controller.js';
 import { JwksController } from '../presentation/http/controllers/jwks.controller.js';
 import { JwtKeysetService } from './security/jwt-keyset.service.js';
 import { ShipmentController } from '../presentation/http/controllers/shipment.controller.js';
@@ -24,9 +25,16 @@ import { JwtTokenService } from './security/jwt-token.service.js';
 
 const parseRoleMapping = (mapping) => {
   try {
-    return JSON.parse(mapping);
-  } catch (_error) {
-    return {};
+    const parsed = JSON.parse(mapping);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('LDAP_ROLE_MAPPING must be a JSON object');
+    }
+
+    return parsed;
+  } catch (error) {
+    throw new Error(
+      `Invalid LDAP_ROLE_MAPPING configuration: ${error.message}`
+    );
   }
 };
 
@@ -48,6 +56,7 @@ export const createContainer = () => {
     serviceAccountDn: env.auth.ldapServiceAccountDn,
     serviceAccountPassword: env.auth.ldapServiceAccountPassword,
     roleMapping: parseRoleMapping(env.auth.ldapRoleMapping),
+    tlsRejectUnauthorized: env.auth.ldapTlsRejectUnauthorized,
   });
   const jwtTokenService = new JwtTokenService({
     jwtKeysetService,
@@ -101,6 +110,10 @@ export const createContainer = () => {
     getShipmentByTrackingUseCase,
     updateShipmentStatusUseCase,
   });
+  const adminController = new AdminController({
+    shipmentRepository,
+    auditRepository,
+  });
 
   const idempotencyMiddleware = createIdempotencyMiddleware(idempotencyStore);
   const verificationConfig = jwtKeysetService.getVerificationConfig();
@@ -119,11 +132,14 @@ export const createContainer = () => {
     'DESPACHO',
     'ADMIN',
   ]);
+  const adminRoleMiddleware = createRoleMiddleware(['ADMIN']);
 
   return {
     authController,
+    adminController,
     jwksController,
     authMiddleware,
+    adminRoleMiddleware,
     createShipmentRoleMiddleware,
     updateShipmentRoleMiddleware,
     idempotencyMiddleware,

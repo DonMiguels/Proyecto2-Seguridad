@@ -114,10 +114,17 @@ La dirección de dependencias apunta hacia el dominio. Los detalles técnicos qu
 
 ## 2.4 Interconexión Frontend → Backend → DB
 
-- **Frontend**: actualmente estático (HTML en carpeta pública) o clientes externos.
-- **Backend**: API REST Express con rutas v1 y legacy.
-- **DB**: PostgreSQL como fuente de verdad para envíos, auditoría y sesiones.
-- **Cache/estado efímero**: Redis (si está disponible) para blacklist distribuida; fallback in-memory para entorno local.
+- **Frontend**: Nginx público en `http://localhost:8080`.
+- **Backend**: API REST Express sin puertos publicados al host.
+- **DB**: PostgreSQL en red interna `data_net`.
+- **Cache/estado efímero**: Redis en red interna `data_net`.
+- **Identidad**: OpenLDAP por LDAPS en red interna `identity_net`.
+
+Política de aislamiento:
+
+- solo frontend publica puertos;
+- `app_net`, `identity_net` y `data_net` son redes internas;
+- todo tráfico entre servicios se resuelve por DNS de Docker Compose.
 
 ## 2.5 Diagrama Mermaid
 
@@ -314,10 +321,12 @@ npm run clean
 
 ## 5.4 URLs locales por defecto
 
-- API base: http://localhost:3000/api
-- API v1: http://localhost:3000/api/v1
-- JWKS: http://localhost:3000/api/v1/.well-known/jwks.json
-- Front estático (si aplica): http://localhost:3000
+- Frontend público: http://localhost:8080
+- API (vía proxy frontend): http://localhost:8080/api
+- API v1 (vía proxy frontend): http://localhost:8080/api/v1
+- JWKS (vía proxy frontend): http://localhost:8080/api/v1/.well-known/jwks.json
+
+> Nota: el backend no publica puerto en el host por diseño de seguridad.
 
 ---
 

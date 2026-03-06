@@ -1,0 +1,31 @@
+dn: ou=People,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: People
+
+dn: ou=Groups,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: Groups
+
+dn: ou=ServiceAccounts,dc=empresa,dc=local
+objectClass: organizationalUnit
+ou: ServiceAccounts
+
+dn: cn=admins,ou=Groups,dc=empresa,dc=local
+objectClass: groupOfNames
+cn: admins
+member: uid=admin,ou=People,dc=empresa,dc=local
+
+dn: cn=despacho,ou=Groups,dc=empresa,dc=local
+objectClass: groupOfNames
+cn: despacho
+member: uid=despacho,ou=People,dc=empresa,dc=local
+
+dn: cn=mostrador,ou=Groups,dc=empresa,dc=local
+objectClass: groupOfNames
+cn: mostrador
+member: uid=mostrador,ou=People,dc=empresa,dc=local
+
+dn: cn=atencion,ou=Groups,dc=empresa,dc=local
+objectClass: groupOfNames
+cn: atencion
+member: uid=atencion,ou=People,dc=empresa,dc=local

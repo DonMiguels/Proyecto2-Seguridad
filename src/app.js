@@ -1,16 +1,12 @@
 import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { createV1ShipmentRoutes } from './presentation/http/routes/v1/shipment.routes.js';
 import { createV1AuthRoutes } from './presentation/http/routes/v1/auth.routes.js';
+import { createV1AdminRoutes } from './presentation/http/routes/v1/admin.routes.js';
 import { createV1SecurityRoutes } from './presentation/http/routes/v1/security.routes.js';
 import { createLegacyAuthRoutes } from './presentation/http/routes/legacy/auth.routes.js';
 import { createLegacyEnviosRoutes } from './presentation/http/routes/legacy/envios.routes.js';
 import { createContainer } from './shared/container.js';
 import logger from './utils/logger.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const createApp = (containerOverride) => {
   const app = express();
@@ -19,16 +15,23 @@ const createApp = (containerOverride) => {
 
   const middlewares = {
     auth: container.authMiddleware || noopMiddleware,
+    adminRole: container.adminRoleMiddleware || noopMiddleware,
     createRole: container.createShipmentRoleMiddleware || noopMiddleware,
     updateRole: container.updateShipmentRoleMiddleware || noopMiddleware,
     idempotency: container.idempotencyMiddleware || noopMiddleware,
   };
 
   app.use(express.json());
-  app.use(express.static(path.join(__dirname, '../public')));
 
   app.use('/api/v1', createV1AuthRoutes(container.authController));
   app.use('/api/v1', createV1SecurityRoutes(container.jwksController));
+  app.use(
+    '/api/v1',
+    createV1AdminRoutes(container.adminController, {
+      auth: middlewares.auth,
+      adminRole: middlewares.adminRole,
+    })
+  );
   app.use(
     '/api/v1',
     createV1ShipmentRoutes(container.shipmentController, middlewares)

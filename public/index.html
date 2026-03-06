@@ -68,10 +68,45 @@
             border-color: #f5c6cb;
             color: #721c24;
         }
+        .status-chip {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .status-ok {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-off {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
     <h1>🚚 Red de Deliveries - Prueba de API</h1>
+
+    <div class="container">
+        <h2>Autenticación</h2>
+        <div id="authStatus" class="status-chip status-off">No autenticado</div>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Usuario:</label>
+                <input type="text" id="username" name="username" placeholder="Ej: mostrador" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Contraseña:</label>
+                <input type="password" id="password" name="password" placeholder="••••••••" required>
+            </div>
+            <button type="submit">Iniciar sesión</button>
+            <button type="button" id="refreshSessionBtn">Refrescar sesión</button>
+            <button type="button" id="logoutBtn">Cerrar sesión</button>
+        </form>
+        <div id="authResponse" class="response" style="display: none;"></div>
+    </div>
     
     <div class="container">
         <h2>Crear Nuevo Envío</h2>
@@ -133,7 +168,61 @@
     </div>
 
     <script>
-        const API_BASE = 'http://localhost:3000/api';
+        const API_BASE = '/api';
+        const V1_API_BASE = '/api/v1';
+
+        const authState = {
+            accessToken: null,
+            refreshToken: null,
+            user: null,
+        };
+
+        function buildIdempotencyKey() {
+            if (window.crypto?.randomUUID) {
+                return window.crypto.randomUUID();
+            }
+
+            return `idem-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+        }
+
+        function updateAuthStatus() {
+            const chip = document.getElementById('authStatus');
+
+            if (authState.accessToken) {
+                chip.className = 'status-chip status-ok';
+                const username = authState.user?.username || 'usuario';
+                const role = authState.user?.role || 'N/A';
+                chip.textContent = `Autenticado: ${username} (${role})`;
+                return;
+            }
+
+            chip.className = 'status-chip status-off';
+            chip.textContent = 'No autenticado';
+        }
+
+        function clearAuthState() {
+            authState.accessToken = null;
+            authState.refreshToken = null;
+            authState.user = null;
+            updateAuthStatus();
+        }
+
+        function getAuthHeaders({ withIdempotency = false } = {}) {
+            if (!authState.accessToken) {
+                throw new Error('Debe iniciar sesión para ejecutar esta operación');
+            }
+
+            const headers = {
+                Authorization: `Bearer ${authState.accessToken}`,
+                'Content-Type': 'application/json',
+            };
+
+            if (withIdempotency) {
+                headers['Idempotency-Key'] = buildIdempotencyKey();
+            }
+
+            return headers;
+        }
 
         // Función para mostrar respuestas
         function showResponse(elementId, data, isSuccess = true) {
@@ -142,6 +231,107 @@
             element.className = `response ${isSuccess ? 'success' : 'error'}`;
             element.textContent = JSON.stringify(data, null, 2);
         }
+
+        // Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const payload = {
+                username: formData.get('username'),
+                password: formData.get('password'),
+            };
+
+            try {
+                const response = await fetch(`${V1_API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    clearAuthState();
+                    showResponse('authResponse', result, false);
+                    return;
+                }
+
+                authState.accessToken = result.accessToken;
+                authState.refreshToken = result.refreshToken;
+                authState.user = result.user;
+                updateAuthStatus();
+                showResponse('authResponse', result, true);
+            } catch (error) {
+                clearAuthState();
+                showResponse('authResponse', { error: 'Error de conexión: ' + error.message }, false);
+            }
+        });
+
+        // Refresh
+        document.getElementById('refreshSessionBtn').addEventListener('click', async () => {
+            if (!authState.refreshToken) {
+                showResponse('authResponse', { error: 'No hay refreshToken disponible' }, false);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${V1_API_BASE}/auth/refresh`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ refreshToken: authState.refreshToken }),
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    clearAuthState();
+                    showResponse('authResponse', result, false);
+                    return;
+                }
+
+                authState.accessToken = result.accessToken;
+                authState.refreshToken = result.refreshToken;
+                authState.user = result.user;
+                updateAuthStatus();
+                showResponse('authResponse', result, true);
+            } catch (error) {
+                showResponse('authResponse', { error: 'Error de conexión: ' + error.message }, false);
+            }
+        });
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            if (!authState.refreshToken) {
+                clearAuthState();
+                showResponse('authResponse', { message: 'Sesión local cerrada' }, true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`${V1_API_BASE}/auth/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(authState.accessToken
+                            ? { Authorization: `Bearer ${authState.accessToken}` }
+                            : {}),
+                    },
+                    body: JSON.stringify({ refreshToken: authState.refreshToken }),
+                });
+
+                const result = await response.json();
+                clearAuthState();
+                showResponse('authResponse', result, response.ok);
+            } catch (error) {
+                clearAuthState();
+                showResponse('authResponse', { error: 'Error de conexión: ' + error.message }, false);
+            }
+        });
 
         // Crear Envío
         document.getElementById('crearEnvioForm').addEventListener('submit', async (e) => {
@@ -158,9 +348,7 @@
             try {
                 const response = await fetch(`${API_BASE}/envios`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: getAuthHeaders({ withIdempotency: true }),
                     body: JSON.stringify(data)
                 });
 
@@ -184,7 +372,12 @@
             const codigo = document.getElementById('codigo_tracking').value;
 
             try {
-                const response = await fetch(`${API_BASE}/envios/${codigo}`);
+                const headers = authState.accessToken
+                    ? { Authorization: `Bearer ${authState.accessToken}` }
+                    : {};
+                const response = await fetch(`${API_BASE}/envios/${codigo}`, {
+                    headers,
+                });
                 const result = await response.json();
                 
                 if (response.ok) {
@@ -207,9 +400,7 @@
             try {
                 const response = await fetch(`${API_BASE}/envios/${codigo}/estado`, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: getAuthHeaders({ withIdempotency: true }),
                     body: JSON.stringify({ estado })
                 });
 
@@ -225,6 +416,8 @@
                 showResponse('actualizarResponse', { error: 'Error de conexión: ' + error.message }, false);
             }
         });
+
+        updateAuthStatus();
     </script>
 </body>
 </html>

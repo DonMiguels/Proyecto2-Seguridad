@@ -22,7 +22,9 @@ const deriveRoleFromGroups = (groups = [], roleMapping = {}) => {
     }
   }
 
-  return 'MOSTRADOR';
+  throw new InvalidCredentialsError(
+    'User does not belong to a mapped LDAP role group'
+  );
 };
 
 export class LdapAuthRepository {
@@ -34,14 +36,19 @@ export class LdapAuthRepository {
     this.serviceAccountPassword = options.serviceAccountPassword;
     this.roleMapping = options.roleMapping || {};
     this.timeout = options.timeout || 5000;
+    this.tlsRejectUnauthorized = options.tlsRejectUnauthorized !== false;
   }
 
   async authenticate(credentials) {
     const { username, password } = credentials;
+
     const client = new Client({
       url: this.url,
       timeout: this.timeout,
       connectTimeout: this.timeout,
+      tlsOptions: {
+        rejectUnauthorized: this.tlsRejectUnauthorized,
+      },
     });
 
     try {

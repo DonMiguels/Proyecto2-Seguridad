@@ -1,69 +1,269 @@
-import { dataFile, readJson } from '../lib/store.js';
+import {
+  dataFile,
+  buildIdempotencyKey,
+  getAdminActivity,
+  getAdminMetrics,
+  getShipmentByTracking,
+  readJson,
+  updateShipmentStatus,
+} from '../lib/store.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { createCli } from '../lib/cli.js';
+import {
+  authenticateCliUser,
+  ensureCliRole,
+  printOptionsList,
+} from '../lib/auth.js';
 import { pathToFileURL } from 'node:url';
 
-const shipmentsFile = () => dataFile('shipments.json');
-const salesFile = () => dataFile('sales.json');
-const ticketsFile = () => dataFile('tickets.json');
-const eventsFile = () => dataFile('events.json');
+const ADMIN_OPTIONS = [
+  '1) Ver métricas globales (DB)',
+  '2) Ver actividad reciente (audit)',
+  '3) Buscar envío por tracking',
+  '4) Forzar estado de envío',
+  '6) Filtrar eventos de seguridad por usuario (legacy tests)',
+  '7) Exportar eventos de seguridad a CSV (legacy tests)',
+  '0) Mantener host activo (no salir)',
+];
 
 function createDefaultCli() {
   return createCli('Host Admin Dashboard');
 }
 
-export async function obtenerMetricas() {
-  const [shipments, sales, tickets] = await Promise.all([
-    readJson(shipmentsFile(), []),
-    readJson(salesFile(), []),
-    readJson(ticketsFile(), []),
-  ]);
+export async function obtenerMetricas(session) {
+  if (!session?.accessToken) {
+    const [shipments, sales, tickets] = await Promise.all([
+      readJson(dataFile('shipments.json'), []),
+      readJson(dataFile('sales.json'), []),
+      readJson(dataFile('tickets.json'), []),
+    ]);
 
-  const abiertas = tickets.filter((t) => t.estado === 'ABIERTO').length;
-  const liberados = shipments.filter((s) => s.estado === 'LIBERADO').length;
-  const facturacion = sales.reduce(
-    (acc, sale) => acc + Number(sale.precio || 0),
-    0
-  );
+    return {
+      enviosTotales: shipments.length,
+      enviosLiberados: shipments.filter((item) => item.estado === 'LIBERADO')
+        .length,
+      ventasTotales: sales.length,
+      facturacion: sales.reduce(
+        (accumulator, item) => accumulator + Number(item.precio || 0),
+        0
+      ),
+      incidenciasAbiertas: tickets.filter((item) => item.estado === 'ABIERTO')
+        .length,
+    };
+  }
 
-  return {
-    enviosTotales: shipments.length,
-    enviosLiberados: liberados,
-    ventasTotales: sales.length,
-    facturacion,
-    incidenciasAbiertas: abiertas,
-  };
+  return getAdminMetrics({ token: session.accessToken });
 }
 
-export async function verMetricas() {
-  const metricas = await obtenerMetricas();
+export async function verMetricas(session) {
+  if (!session?.accessToken) {
+    const metricas = await obtenerMetricas(session);
+
+    console.log('\n=== Métricas Globales ===');
+    console.log(`Envíos totales: ${metricas.enviosTotales}`);
+    console.log(`Envíos liberados: ${metricas.enviosLiberados}`);
+    console.log(`Ventas totales: ${metricas.ventasTotales}`);
+    console.log(`Facturación simulada: $${metricas.facturacion}`);
+    console.log(`Incidencias abiertas: ${metricas.incidenciasAbiertas}\n`);
+    return;
+  }
+
+  const { metricas } = await obtenerMetricas(session);
 
   console.log('\n=== Métricas Globales ===');
-  console.log(`Envíos totales: ${metricas.enviosTotales}`);
-  console.log(`Envíos liberados: ${metricas.enviosLiberados}`);
-  console.log(`Ventas totales: ${metricas.ventasTotales}`);
-  console.log(`Facturación simulada: $${metricas.facturacion}`);
-  console.log(`Incidencias abiertas: ${metricas.incidenciasAbiertas}\n`);
+  console.log(`Envíos totales: ${metricas.total}`);
+  console.log(`REGISTRADO: ${metricas.registrado}`);
+  console.log(`EN_TRANSITO: ${metricas.enTransito}`);
+  console.log(`EN_REPARTO: ${metricas.enReparto}`);
+  console.log(`ENTREGADO: ${metricas.entregado}`);
+  console.log(`CANCELADO: ${metricas.cancelado}\n`);
 }
 
-export async function verActividadReciente() {
-  const events = await readJson(eventsFile(), []);
+export async function verActividadReciente(session) {
+  if (!session?.accessToken) {
+    const events = await readJson(dataFile('events.json'), []);
+
+    console.log('\n=== Actividad Reciente ===');
+    if (events.length === 0) {
+      console.log('Sin actividad registrada aún.\n');
+      return;
+    }
+
+    events.slice(-20).forEach((event) => {
+      console.log(`${event.at} | ${event.source} | ${event.type}`);
+    });
+    console.log();
+    return;
+  }
+
+  const { actividad } = await getAdminActivity({
+    token: session.accessToken,
+    limit: 20,
+  });
 
   console.log('\n=== Actividad Reciente ===');
-  if (events.length === 0) {
+  if (actividad.length === 0) {
     console.log('Sin actividad registrada aún.\n');
     return;
   }
 
-  events.slice(-20).forEach((event) => {
-    console.log(`${event.at} | ${event.source} | ${event.type}`);
+  actividad.forEach((event) => {
+    console.log(
+      `${event.fecha_creacion} | ${event.usuario_id} | ${event.accion} | ${event.entidad_id}`
+    );
   });
   console.log();
 }
 
-export async function handleOption(option) {
-  if (option === '1') await verMetricas();
-  else if (option === '2') await verActividadReciente();
-  else if (option === '0') {
+export async function buscarTracking(cliInstance, session) {
+  const trackingCode = await cliInstance.ask('Código tracking: ');
+  const { envio } = await getShipmentByTracking({
+    trackingCode,
+    token: session.accessToken,
+  });
+
+  console.log('\n=== Envío ===');
+  console.log(`Tracking: ${envio.codigo_tracking}`);
+  console.log(`Estado: ${envio.estado}`);
+  console.log(`Remitente: ${envio.remitente}`);
+  console.log(`Destinatario: ${envio.destinatario}`);
+  console.log();
+}
+
+export async function forzarEstado(cliInstance, session) {
+  const trackingCode = await cliInstance.ask('Tracking: ');
+  const status = await cliInstance.ask(
+    'Nuevo estado (REGISTRADO/EN_TRANSITO/EN_REPARTO/ENTREGADO/CANCELADO): '
+  );
+  const { envio } = await updateShipmentStatus({
+    token: session.accessToken,
+    trackingCode,
+    status,
+    idempotencyKey: buildIdempotencyKey(),
+  });
+
+  console.log(`\n✔ Estado actualizado: ${envio.codigo_tracking} -> ${envio.estado}\n`);
+}
+
+const getSecurityEvents = async () => {
+  return readJson(dataFile('security-events.json'), []);
+};
+
+export async function verEventosSeguridad() {
+  const events = await getSecurityEvents();
+  console.log('\n=== Eventos de Seguridad ===');
+
+  if (events.length === 0) {
+    console.log('Sin eventos de seguridad.\n');
+    return;
+  }
+
+  events.slice(-50).forEach((event) => {
+    console.log(
+      `${event.at} | ${event.type} | ${event.username || '-'} | ${event.role || '-'} | ${event.reason || '-'} | ${event.action || '-'}`
+    );
+  });
+  console.log();
+}
+
+export async function verAutenticacionesFallidas() {
+  const events = await getSecurityEvents();
+  const filtered = events.filter((event) => event.type === 'authn.failed');
+
+  console.log('\n=== Autenticaciones Fallidas ===');
+  filtered.forEach((event) => {
+    console.log(`${event.at} | ${event.type} | ${event.username || '-'}`);
+  });
+  console.log();
+}
+
+export async function verDenegacionesPorRol() {
+  const events = await getSecurityEvents();
+  const filtered = events.filter((event) => event.type === 'authz.denied');
+
+  console.log('\n=== Denegaciones por Rol ===');
+  filtered.forEach((event) => {
+    console.log(
+      `${event.at} | ${event.type} | ${event.username || '-'} | ${event.role || '-'}`
+    );
+  });
+  console.log();
+}
+
+export async function verEventosSeguridadPorUsuario(username) {
+  const events = await getSecurityEvents();
+  const normalizedUsername = String(username || '').trim();
+  const filtered = events.filter((event) => event.username === normalizedUsername);
+
+  console.log(`\n=== Eventos de Seguridad (usuario: ${normalizedUsername}) ===`);
+  filtered.forEach((event) => {
+    console.log(`${event.at} | ${event.type} | ${event.username || '-'}`);
+  });
+  console.log();
+}
+
+export async function exportarEventosSeguridadCsv(filter = 'todos') {
+  const events = await getSecurityEvents();
+  let filtered = events;
+
+  if (filter === 'fallidos') {
+    filtered = events.filter((event) => event.type === 'authn.failed');
+  } else if (filter === 'denegaciones') {
+    filtered = events.filter((event) => event.type === 'authz.denied');
+  }
+
+  const headers = ['at', 'source', 'type', 'username', 'role', 'reason', 'action'];
+  const lines = [headers.join(',')];
+
+  filtered.forEach((event) => {
+    const row = headers.map((header) => {
+      const value = event[header] ?? '';
+      const sanitized = String(value).replace(/"/g, '""');
+      return `"${sanitized}"`;
+    });
+    lines.push(row.join(','));
+  });
+
+  const fileName = `security-events-export-${filter}-${Date.now()}.csv`;
+  const filePath = path.join(dataFile('.'), fileName);
+  await fs.writeFile(filePath, `${lines.join('\n')}\n`, 'utf-8');
+
+  return {
+    count: filtered.length,
+    path: filePath,
+  };
+}
+
+export async function handleOption(option, session = null, cliInstance = null) {
+  const canOperate = await ensureCliRole(session, {
+    allowedRoles: ['ADMIN'],
+    actionLabel: 'operar en Host Admin',
+    hostName: 'admin',
+  });
+
+  if (!canOperate && option !== '0') {
+    return;
+  }
+
+  if (option === '1') {
+    await verMetricas(session);
+  } else if (option === '2') {
+    await verActividadReciente(session);
+  } else if (option === '3') {
+    await buscarTracking(cliInstance, session);
+  } else if (option === '4') {
+    await forzarEstado(cliInstance, session);
+  } else if (option === '6' && !session?.accessToken) {
+    const username = await cliInstance.ask('Usuario a filtrar: ');
+    await verEventosSeguridadPorUsuario(username);
+  } else if (option === '7' && !session?.accessToken) {
+    const filter = await cliInstance.ask('Filtro (todos/fallidos/denegaciones): ');
+    const result = await exportarEventosSeguridadCsv(filter || 'todos');
+    console.log(`\n=== Exportación CSV ===`);
+    console.log(`Registros exportados: ${result.count}`);
+    console.log(`Archivo: ${result.path}\n`);
+  } else if (option === '0') {
     console.log('\nHost en espera. Use Ctrl+p, Ctrl+q para desacoplarse.\n');
   } else {
     console.log('\nOpción inválida.\n');
@@ -72,18 +272,23 @@ export async function handleOption(option) {
 
 export async function runLoop(
   cliInstance = createDefaultCli(),
-  { iterations = Infinity } = {}
+  { iterations = Infinity, session = null } = {}
 ) {
   let executed = 0;
 
   while (executed < iterations) {
     cliInstance.printHeader();
-    console.log('1) Ver métricas globales');
-    console.log('2) Ver actividad reciente');
-    console.log('0) Mantener host activo (no salir)\n');
+    if (session) {
+      console.log(`Usuario autenticado: ${session.username} (${session.role})`);
+    }
+    printOptionsList(ADMIN_OPTIONS);
 
     const option = await cliInstance.ask('Opción: ');
-    await handleOption(option);
+    try {
+      await handleOption(option, session, cliInstance);
+    } catch (error) {
+      console.log(`\n✖ Error de operación: ${error.message}\n`);
+    }
 
     await cliInstance.ask('Presione Enter para continuar...');
     executed += 1;
@@ -95,7 +300,13 @@ async function main() {
     console.log('\nUse Ctrl+p, Ctrl+q para desacoplarse sin detener el host.');
   });
 
-  await runLoop();
+  const cliInstance = createDefaultCli();
+  const session = await authenticateCliUser(cliInstance, {
+    hostName: 'Host Admin Dashboard',
+    allowedRoles: ['ADMIN'],
+  });
+
+  await runLoop(cliInstance, { session });
 }
 
 const isMainModule = process.argv[1]

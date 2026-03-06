@@ -84,6 +84,55 @@ docker compose ps
 
 - <http://localhost:8080>
 
+## Arranque desde cero (pasos validados en esta conversación)
+
+Si vienes de intentos fallidos o de una máquina nueva, sigue esta secuencia completa.
+
+1. Limpiar stack previo (incluyendo volúmenes):
+
+```bash
+docker compose down -v --remove-orphans
+```
+
+2. Crear secretos como **archivos** dentro de `secrets/` (no carpetas).  
+   En Windows, si por error creaste carpetas con nombre `*.txt`, elimínalas y recrea los archivos.
+
+PowerShell (ejemplo local):
+
+```powershell
+Remove-Item -Recurse -Force .\secrets\db_password.txt, .\secrets\jwt_secret.txt, .\secrets\ldap_admin_password.txt, .\secrets\ldap_config_password.txt, .\secrets\ldap_bind_password.txt -ErrorAction SilentlyContinue
+
+Set-Content -Path .\secrets\db_password.txt -NoNewline -Value 'PgP@ssw0rd!2026'
+Set-Content -Path .\secrets\jwt_secret.txt -NoNewline -Value 'jwt-secret-local-2026-change-me'
+Set-Content -Path .\secrets\ldap_admin_password.txt -NoNewline -Value 'LdapAdminP@ss!2026'
+Set-Content -Path .\secrets\ldap_config_password.txt -NoNewline -Value 'LdapConfigP@ss!2026'
+Set-Content -Path .\secrets\ldap_bind_password.txt -NoNewline -Value 'LdapBindP@ss!2026'
+```
+
+3. Verificar material TLS de LDAP en `ldap/certs/`:
+
+- Requeridos: `ca.crt`, `server.crt`, `server.key`.
+- Si falta `server.key` (o certificados inválidos), regenera con OpenSSL en contenedor:
+
+```powershell
+$certDir = (Resolve-Path .\ldap\certs).Path
+docker run --rm --entrypoint /bin/sh -v "${certDir}:/out" alpine/openssl -c "openssl genrsa -out /out/ca.key 2048; openssl req -x509 -new -nodes -key /out/ca.key -sha256 -days 3650 -subj '/CN=deliveries-ldap-ca' -out /out/ca.crt; openssl genrsa -out /out/server.key 2048; openssl req -new -key /out/server.key -subj '/CN=ldap' -out /out/server.csr; printf 'subjectAltName=DNS:ldap,DNS:localhost,IP:127.0.0.1\nextendedKeyUsage=serverAuth\n' > /tmp/ext.cnf; openssl x509 -req -in /out/server.csr -CA /out/ca.crt -CAkey /out/ca.key -CAcreateserial -out /out/server.crt -days 825 -sha256 -extfile /tmp/ext.cnf; rm -f /out/server.csr /out/ca.key /out/ca.srl"
+```
+
+4. Levantar servicios:
+
+```bash
+docker compose up -d --build
+```
+
+5. Confirmar salud del stack:
+
+```bash
+docker compose ps
+```
+
+Estado esperado: `db`, `ldap`, `redis`, `backend` y `frontend` en `Up`/`healthy`.
+
 ## Uso crítico de Hosts CLI por `docker attach`
 
 Los hosts CLI corren en modo interactivo permanente con TTY abierto.

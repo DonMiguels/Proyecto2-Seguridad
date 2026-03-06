@@ -163,11 +163,12 @@ No uses `Ctrl+c` si deseas mantener el proceso del host en ejecución.
 - `despacho` / `despacho123` → rol `DESPACHO`
 - `mostrador` / `mostrador123` → rol `MOSTRADOR`
 - `atencion` / `atencion123` → rol `ATENCION`
+- `cliente` / `cliente123` → rol `CONSULTA` (solo tracking en frontend)
 
 ### LDAP (administración / bind)
 
 - Admin LDAP: `cn=admin,dc=empresa,dc=local` / valor en `secrets/ldap_admin_password.txt`
-- Service account backend: `cn=svc-backend,ou=ServiceAccounts,dc=empresa,dc=local` / valor en `secrets/ldap_bind_password.txt`
+- Cuenta de bind backend: `cn=admin,dc=empresa,dc=local` / valor en `secrets/ldap_bind_password.txt`
 
 ### Base de datos PostgreSQL
 

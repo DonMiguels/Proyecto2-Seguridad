@@ -294,6 +294,31 @@ services:
       - /tmp
     restart: unless-stopped
 
+  host-consulta:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulation
+    container_name: host_consulta
+    init: true
+    command: ['node', 'simulation-cli/hosts/consulta.cli.js']
+    environment:
+      SIM_API_BASE_URL: http://backend:3000/api/v1
+    stdin_open: true
+    tty: true
+    networks:
+      - app_net
+    depends_on:
+      backend:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    restart: unless-stopped
+
   host-admin:
     build:
       context: .

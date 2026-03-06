@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
-import ENVIO_QUERIES from '../queries/envios.queries.js';
+import ENVIO_QUERIES from '../infrastructure/database/postgres/queries/envios.queries.js';
 import { SHIPMENT_STATUS_VALUES } from '../shared/config/shipment-status.config.js';
 import logger from '../utils/logger.js';
 

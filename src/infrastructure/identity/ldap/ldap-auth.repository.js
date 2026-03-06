@@ -27,6 +27,18 @@ const deriveRoleFromGroups = (groups = [], roleMapping = {}) => {
   );
 };
 
+const normalizeMemberOf = (memberOf) => {
+  if (Array.isArray(memberOf)) {
+    return memberOf;
+  }
+
+  if (memberOf) {
+    return [memberOf];
+  }
+
+  return [];
+};
+
 export class LdapAuthRepository {
   constructor(options) {
     this.url = options.url;
@@ -71,13 +83,24 @@ export class LdapAuthRepository {
         throw new InvalidCredentialsError('Invalid username or password');
       }
 
-      await client.bind(entry.dn, password);
+      let memberOf = normalizeMemberOf(entry.memberOf);
 
-      const memberOf = Array.isArray(entry.memberOf)
-        ? entry.memberOf
-        : entry.memberOf
-          ? [entry.memberOf]
-          : [];
+      if (memberOf.length === 0) {
+        const groupsSearchResult = await client.search(
+          `ou=Groups,${this.baseDn}`,
+          {
+            scope: 'sub',
+            filter: `(member=${escapeLdapFilter(entry.dn)})`,
+            attributes: ['dn'],
+          }
+        );
+
+        memberOf = groupsSearchResult.searchEntries
+          .map((groupEntry) => groupEntry.dn)
+          .filter(Boolean);
+      }
+
+      await client.bind(entry.dn, password);
 
       return {
         id: entry.dn,

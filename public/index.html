@@ -186,11 +186,6 @@
           <label for="estado">Nuevo Estado:</label>
           <select id="estado" name="estado" required>
             <option value="">Seleccionar estado...</option>
-            <option value="REGISTRADO">REGISTRADO</option>
-            <option value="EN_TRANSITO">EN_TRANSITO</option>
-            <option value="EN_REPARTO">EN_REPARTO</option>
-            <option value="ENTREGADO">ENTREGADO</option>
-            <option value="CANCELADO">CANCELADO</option>
           </select>
         </div>
         <button type="submit">Actualizar Estado</button>
@@ -253,6 +248,30 @@
         }
 
         return headers;
+      }
+
+      async function loadShipmentStatuses() {
+        const estadoSelect = document.getElementById('estado');
+
+        try {
+          const response = await fetch(`${V1_API_BASE}/shipments/statuses`);
+          const result = await response.json();
+
+          if (!response.ok || !Array.isArray(result.estados)) {
+            throw new Error(result.error || 'No se pudo obtener catálogo');
+          }
+
+          result.estados.forEach((estado) => {
+            const option = document.createElement('option');
+            option.value = estado;
+            option.textContent = estado;
+            estadoSelect.appendChild(option);
+          });
+        } catch (_error) {
+          estadoSelect.innerHTML =
+            '<option value="">Estados no disponibles</option>';
+          estadoSelect.disabled = true;
+        }
       }
 
       // Función para mostrar respuestas
@@ -498,6 +517,7 @@
         });
 
       updateAuthStatus();
+      loadShipmentStatuses();
     </script>
   </body>
 </html>

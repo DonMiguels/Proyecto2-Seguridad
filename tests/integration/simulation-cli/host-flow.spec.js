@@ -7,6 +7,7 @@ import {
   obtenerMetricas,
   verActividadReciente,
 } from '../../../simulation-cli/hosts/admin.cli.js';
+import { SHIPMENT_STATUS } from '../../../src/shared/config/shipment-status.config.js';
 import {
   createMockCli,
   createSimulationTempDir,
@@ -73,12 +74,15 @@ describe('Integración de hosts simulados', () => {
 
   it('Operaciones de distintos hosts aparecen en actividad de Admin', async () => {
     vi.spyOn(store, 'updateShipmentStatus').mockResolvedValue({
-      envio: { codigo_tracking: 'TRK-2001', estado: 'EN_TRANSITO' },
+      envio: {
+        codigo_tracking: 'TRK-2001',
+        estado: SHIPMENT_STATUS.IN_TRANSIT,
+      },
     });
     vi.spyOn(store, 'getShipmentByTracking').mockResolvedValue({
       envio: {
         codigo_tracking: 'TRK-2001',
-        estado: 'EN_TRANSITO',
+        estado: SHIPMENT_STATUS.IN_TRANSIT,
         direccion_destino: 'Street 2',
       },
     });

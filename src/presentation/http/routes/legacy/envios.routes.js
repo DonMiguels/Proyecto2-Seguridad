@@ -11,6 +11,7 @@ export const createLegacyEnviosRoutes = (
   const createRole = middlewares.createRole || noopMiddleware;
   const updateRole = middlewares.updateRole || noopMiddleware;
 
+  router.get('/envios/estados', shipmentController.getShipmentStatuses);
   router.post(
     '/envios',
     auth,

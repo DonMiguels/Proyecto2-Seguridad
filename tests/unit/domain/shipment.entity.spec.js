@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { Shipment } from '../../../src/domain/shipment/shipment.entity.js';
+import { SHIPMENT_STATUS } from '../../../src/shared/config/shipment-status.config.js';
 import {
   InvalidShipmentStatusError,
   InvalidShipmentStatusTransitionError,
 } from '../../../src/domain/shipment/shipment-errors.js';
 
-const buildShipment = (estado = 'REGISTRADO') => {
+const buildShipment = (estado = SHIPMENT_STATUS.REGISTERED) => {
   return new Shipment({
     id: 1,
     codigo_tracking: 'TRK-TEST-0001',
@@ -21,15 +22,15 @@ const buildShipment = (estado = 'REGISTRADO') => {
 
 describe('Shipment entity', () => {
   it('should allow a valid status transition', () => {
-    const shipment = buildShipment('REGISTRADO');
+    const shipment = buildShipment(SHIPMENT_STATUS.REGISTERED);
 
-    shipment.changeStatus('EN_TRANSITO');
+    shipment.changeStatus(SHIPMENT_STATUS.IN_TRANSIT);
 
-    expect(shipment.estado).toBe('EN_TRANSITO');
+    expect(shipment.estado).toBe(SHIPMENT_STATUS.IN_TRANSIT);
   });
 
   it('should reject an unknown status', () => {
-    const shipment = buildShipment('REGISTRADO');
+    const shipment = buildShipment(SHIPMENT_STATUS.REGISTERED);
 
     expect(() => shipment.changeStatus('UNKNOWN_STATUS')).toThrow(
       InvalidShipmentStatusError
@@ -37,9 +38,9 @@ describe('Shipment entity', () => {
   });
 
   it('should reject an invalid transition', () => {
-    const shipment = buildShipment('ENTREGADO');
+    const shipment = buildShipment(SHIPMENT_STATUS.DELIVERED);
 
-    expect(() => shipment.changeStatus('EN_TRANSITO')).toThrow(
+    expect(() => shipment.changeStatus(SHIPMENT_STATUS.IN_TRANSIT)).toThrow(
       InvalidShipmentStatusTransitionError
     );
   });

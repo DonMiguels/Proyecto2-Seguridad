@@ -1,0 +1,53 @@
+export const SHIPMENT_STATUS = Object.freeze({
+  REGISTERED: 'REGISTRADO',
+  IN_TRANSIT: 'EN_TRANSITO',
+  OUT_FOR_DELIVERY: 'EN_REPARTO',
+  DELIVERED: 'ENTREGADO',
+  CANCELED: 'CANCELADO',
+});
+
+export const SHIPMENT_STATUS_VALUES = Object.freeze(
+  Object.values(SHIPMENT_STATUS)
+);
+
+export const SHIPMENT_STATUS_LIST_TEXT = SHIPMENT_STATUS_VALUES.join('/');
+
+export const SHIPMENT_ALLOWED_TRANSITIONS = Object.freeze({
+  [SHIPMENT_STATUS.REGISTERED]: [
+    SHIPMENT_STATUS.IN_TRANSIT,
+    SHIPMENT_STATUS.CANCELED,
+  ],
+  [SHIPMENT_STATUS.IN_TRANSIT]: [
+    SHIPMENT_STATUS.OUT_FOR_DELIVERY,
+    SHIPMENT_STATUS.CANCELED,
+  ],
+  [SHIPMENT_STATUS.OUT_FOR_DELIVERY]: [
+    SHIPMENT_STATUS.DELIVERED,
+    SHIPMENT_STATUS.CANCELED,
+  ],
+  [SHIPMENT_STATUS.DELIVERED]: [],
+  [SHIPMENT_STATUS.CANCELED]: [],
+});
+
+export const SHIPMENT_STATUS_SUMMARY_METRICS = Object.freeze([
+  {
+    status: SHIPMENT_STATUS.REGISTERED,
+    alias: 'registrado',
+  },
+  {
+    status: SHIPMENT_STATUS.IN_TRANSIT,
+    alias: 'en_transito',
+  },
+  {
+    status: SHIPMENT_STATUS.OUT_FOR_DELIVERY,
+    alias: 'en_reparto',
+  },
+  {
+    status: SHIPMENT_STATUS.DELIVERED,
+    alias: 'entregado',
+  },
+  {
+    status: SHIPMENT_STATUS.CANCELED,
+    alias: 'cancelado',
+  },
+]);

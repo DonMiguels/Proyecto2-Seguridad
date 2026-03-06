@@ -5,6 +5,7 @@ import {
   InvalidShipmentStatusTransitionError,
   ShipmentNotFoundError,
 } from '../../../domain/shipment/shipment-errors.js';
+import { SHIPMENT_STATUS_VALUES } from '../../../shared/config/shipment-status.config.js';
 import logger from '../../../utils/logger.js';
 
 const mapErrorToHttpResponse = (error) => {
@@ -92,5 +93,11 @@ export class ShipmentController {
       const mappedError = mapErrorToHttpResponse(error);
       return res.status(mappedError.statusCode).json(mappedError.payload);
     }
+  };
+
+  getShipmentStatuses = async (_req, res) => {
+    return res.status(200).json({
+      estados: SHIPMENT_STATUS_VALUES,
+    });
   };
 }

@@ -10,6 +10,7 @@ import {
   printOptionsList,
 } from '../lib/auth.js';
 import { pathToFileURL } from 'node:url';
+import { SHIPMENT_STATUS } from '../../src/shared/config/shipment-status.config.js';
 
 const ATENCION_OPTIONS = [
   '1) Consultar tracking',
@@ -65,9 +66,9 @@ export async function handleOption(option, cliInstance, session = null) {
   if (option === '1') {
     await consultarTracking(cliInstance, session);
   } else if (option === '2') {
-    await actualizarEstado(cliInstance, session, 'ENTREGADO');
+    await actualizarEstado(cliInstance, session, SHIPMENT_STATUS.DELIVERED);
   } else if (option === '3') {
-    await actualizarEstado(cliInstance, session, 'CANCELADO');
+    await actualizarEstado(cliInstance, session, SHIPMENT_STATUS.CANCELED);
   } else if (option === '0') {
     console.log('\nHost en espera. Use Ctrl+p, Ctrl+q para desacoplarse.\n');
   } else {

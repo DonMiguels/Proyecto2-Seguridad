@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as store from '../../../simulation-cli/lib/store.js';
 import { handleOption } from '../../../simulation-cli/hosts/despacho.cli.js';
+import { SHIPMENT_STATUS } from '../../../src/shared/config/shipment-status.config.js';
 import {
   createMockCli,
   getLogOutput,
@@ -24,7 +25,10 @@ describe('Host Despacho CLI', () => {
     const cli = createMockCli(['TRK-001']);
     const logSpy = mockConsoleLog();
     vi.spyOn(store, 'updateShipmentStatus').mockResolvedValue({
-      envio: { codigo_tracking: 'TRK-001', estado: 'EN_TRANSITO' },
+      envio: {
+        codigo_tracking: 'TRK-001',
+        estado: SHIPMENT_STATUS.IN_TRANSIT,
+      },
     });
 
     await handleOption('1', cli, session);
@@ -33,7 +37,7 @@ describe('Host Despacho CLI', () => {
       expect.objectContaining({
         token: 'access-token',
         trackingCode: 'TRK-001',
-        status: 'EN_TRANSITO',
+        status: SHIPMENT_STATUS.IN_TRANSIT,
       })
     );
     expect(getLogOutput(logSpy)).toContain('Estado actualizado');
@@ -45,7 +49,7 @@ describe('Host Despacho CLI', () => {
     vi.spyOn(store, 'getShipmentByTracking').mockResolvedValue({
       envio: {
         codigo_tracking: 'TRK-123',
-        estado: 'EN_REPARTO',
+        estado: SHIPMENT_STATUS.OUT_FOR_DELIVERY,
         remitente: 'Alice',
         destinatario: 'Bob',
       },
@@ -54,7 +58,7 @@ describe('Host Despacho CLI', () => {
     await handleOption('3', cli, session);
 
     expect(getLogOutput(logSpy)).toContain('TRK-123');
-    expect(getLogOutput(logSpy)).toContain('EN_REPARTO');
+    expect(getLogOutput(logSpy)).toContain(SHIPMENT_STATUS.OUT_FOR_DELIVERY);
   });
 
   it('debe informar opción inválida', async () => {

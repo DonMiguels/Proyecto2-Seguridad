@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../config/database.js';
 import ENVIO_QUERIES from '../queries/envios.queries.js';
+import { SHIPMENT_STATUS_VALUES } from '../shared/config/shipment-status.config.js';
 import logger from '../utils/logger.js';
 
 const crearEnvio = async (req, res) => {
@@ -83,13 +84,7 @@ const actualizarEstadoEnvio = async (req, res) => {
       });
     }
 
-    const estadosValidos = [
-      'REGISTRADO',
-      'EN_TRANSITO',
-      'EN_REPARTO',
-      'ENTREGADO',
-      'CANCELADO',
-    ];
+    const estadosValidos = SHIPMENT_STATUS_VALUES;
     if (!estadosValidos.includes(estado)) {
       return res.status(400).json({
         error:

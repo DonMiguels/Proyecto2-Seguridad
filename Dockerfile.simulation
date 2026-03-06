@@ -7,6 +7,7 @@ RUN apk add --no-cache dumb-init \
     && adduser -S simuser -G simgroup
 
 COPY --chown=simuser:simgroup simulation-cli ./simulation-cli
+COPY --chown=simuser:simgroup src/shared/config ./src/shared/config
 
 ENV NODE_ENV=production
 

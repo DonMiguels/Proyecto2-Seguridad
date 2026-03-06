@@ -3,6 +3,7 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { InMemoryIdempotencyKeyStore } from '../../../src/infrastructure/cache/in-memory/idempotency-key.store.js';
 import { createIdempotencyMiddleware } from '../../../src/presentation/http/middlewares/idempotency.middleware.js';
+import { SHIPMENT_STATUS } from '../../../src/shared/config/shipment-status.config.js';
 
 const buildTestApp = () => {
   const app = express();
@@ -54,12 +55,12 @@ describe('Idempotency middleware', () => {
     const firstResponse = await request(app)
       .patch('/shipments/TRK-123/status')
       .set('Idempotency-Key', 'same-key')
-      .send({ estado: 'EN_TRANSITO' });
+      .send({ estado: SHIPMENT_STATUS.IN_TRANSIT });
 
     const secondResponse = await request(app)
       .patch('/shipments/TRK-123/status')
       .set('Idempotency-Key', 'same-key')
-      .send({ estado: 'EN_TRANSITO' });
+      .send({ estado: SHIPMENT_STATUS.IN_TRANSIT });
 
     expect(firstResponse.status).toBe(200);
     expect(secondResponse.status).toBe(200);

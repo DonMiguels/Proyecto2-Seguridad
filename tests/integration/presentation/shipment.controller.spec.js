@@ -3,6 +3,10 @@ import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { ShipmentController } from '../../../src/presentation/http/controllers/shipment.controller.js';
 import {
+  SHIPMENT_STATUS,
+  SHIPMENT_STATUS_VALUES,
+} from '../../../src/shared/config/shipment-status.config.js';
+import {
   InvalidShipmentStatusTransitionError,
   ShipmentNotFoundError,
 } from '../../../src/domain/shipment/shipment-errors.js';
@@ -12,6 +16,7 @@ const createTestApp = (controller) => {
   app.use(express.json());
 
   app.post('/api/v1/shipments', controller.createShipment);
+  app.get('/api/v1/shipments/statuses', controller.getShipmentStatuses);
   app.get('/api/v1/shipments/:codigo', controller.getShipmentByTracking);
   app.patch(
     '/api/v1/shipments/:codigo/status',
@@ -22,6 +27,20 @@ const createTestApp = (controller) => {
 };
 
 describe('ShipmentController integration', () => {
+  it('should return configured shipment statuses', async () => {
+    const controller = new ShipmentController({
+      createShipmentUseCase: { execute: vi.fn() },
+      getShipmentByTrackingUseCase: { execute: vi.fn() },
+      updateShipmentStatusUseCase: { execute: vi.fn() },
+    });
+
+    const app = createTestApp(controller);
+    const response = await request(app).get('/api/v1/shipments/statuses');
+
+    expect(response.status).toBe(200);
+    expect(response.body.estados).toEqual(SHIPMENT_STATUS_VALUES);
+  });
+
   it('should return 201 when creating shipment', async () => {
     const controller = new ShipmentController({
       createShipmentUseCase: {
@@ -78,7 +97,7 @@ describe('ShipmentController integration', () => {
 
     const response = await request(app)
       .patch('/api/v1/shipments/TRK-1/status')
-      .send({ estado: 'EN_TRANSITO' });
+      .send({ estado: SHIPMENT_STATUS.IN_TRANSIT });
 
     expect(response.status).toBe(422);
   });

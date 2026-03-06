@@ -53,7 +53,9 @@ describe('Host Admin CLI', () => {
     const metricas = await obtenerMetricas(session);
 
     expect(metricas.metricas.total).toBe(2);
-    expect(store.getAdminMetrics).toHaveBeenCalledWith({ token: 'access-token' });
+    expect(store.getAdminMetrics).toHaveBeenCalledWith({
+      token: 'access-token',
+    });
   });
 
   it('debe mostrar actividad reciente', async () => {

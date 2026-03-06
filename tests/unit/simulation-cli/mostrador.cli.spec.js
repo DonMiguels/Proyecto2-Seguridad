@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as store from '../../../simulation-cli/lib/store.js';
 import { handleOption } from '../../../simulation-cli/hosts/mostrador.cli.js';
+import { SHIPMENT_STATUS } from '../../../src/shared/config/shipment-status.config.js';
 import {
   createMockCli,
   getLogOutput,
@@ -49,7 +50,7 @@ describe('Host Mostrador CLI', () => {
     vi.spyOn(store, 'getShipmentByTracking').mockResolvedValue({
       envio: {
         codigo_tracking: 'TRK-XYZ',
-        estado: 'REGISTRADO',
+        estado: SHIPMENT_STATUS.REGISTERED,
         remitente: 'Alice',
         destinatario: 'Bob',
       },
@@ -58,7 +59,7 @@ describe('Host Mostrador CLI', () => {
     await handleOption('2', cli, session);
 
     expect(getLogOutput(logSpy)).toContain('TRK-XYZ');
-    expect(getLogOutput(logSpy)).toContain('REGISTRADO');
+    expect(getLogOutput(logSpy)).toContain(SHIPMENT_STATUS.REGISTERED);
   });
 
   it('debe responder opción inválida', async () => {

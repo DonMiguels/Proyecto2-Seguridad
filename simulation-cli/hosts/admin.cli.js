@@ -16,6 +16,10 @@ import {
   printOptionsList,
 } from '../lib/auth.js';
 import { pathToFileURL } from 'node:url';
+import {
+  SHIPMENT_STATUS,
+  SHIPMENT_STATUS_LIST_TEXT,
+} from '../../src/shared/config/shipment-status.config.js';
 
 const ADMIN_OPTIONS = [
   '1) Ver métricas globales (DB)',
@@ -40,11 +44,11 @@ export async function verMetricas(session) {
 
   console.log('\n=== Métricas Globales ===');
   console.log(`Envíos totales: ${metricas.total}`);
-  console.log(`REGISTRADO: ${metricas.registrado}`);
-  console.log(`EN_TRANSITO: ${metricas.enTransito}`);
-  console.log(`EN_REPARTO: ${metricas.enReparto}`);
-  console.log(`ENTREGADO: ${metricas.entregado}`);
-  console.log(`CANCELADO: ${metricas.cancelado}\n`);
+  console.log(`${SHIPMENT_STATUS.REGISTERED}: ${metricas.registrado}`);
+  console.log(`${SHIPMENT_STATUS.IN_TRANSIT}: ${metricas.enTransito}`);
+  console.log(`${SHIPMENT_STATUS.OUT_FOR_DELIVERY}: ${metricas.enReparto}`);
+  console.log(`${SHIPMENT_STATUS.DELIVERED}: ${metricas.entregado}`);
+  console.log(`${SHIPMENT_STATUS.CANCELED}: ${metricas.cancelado}\n`);
 }
 
 export async function verActividadReciente(session) {
@@ -85,7 +89,7 @@ export async function buscarTracking(cliInstance, session) {
 export async function forzarEstado(cliInstance, session) {
   const trackingCode = await cliInstance.ask('Tracking: ');
   const status = await cliInstance.ask(
-    'Nuevo estado (REGISTRADO/EN_TRANSITO/EN_REPARTO/ENTREGADO/CANCELADO): '
+    `Nuevo estado (${SHIPMENT_STATUS_LIST_TEXT}): `
   );
   const { envio } = await updateShipmentStatus({
     token: session.accessToken,

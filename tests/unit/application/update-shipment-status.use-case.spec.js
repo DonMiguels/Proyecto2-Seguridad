@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { UpdateShipmentStatusUseCase } from '../../../src/application/shipment/update-shipment-status.use-case.js';
+import { SHIPMENT_STATUS } from '../../../src/shared/config/shipment-status.config.js';
 import {
   InvalidShipmentPayloadError,
   ShipmentNotFoundError,
@@ -40,7 +41,10 @@ describe('UpdateShipmentStatusUseCase', () => {
     );
 
     await expect(
-      useCase.execute({ trackingCode: 'TRK-1', status: 'EN_TRANSITO' })
+      useCase.execute({
+        trackingCode: 'TRK-1',
+        status: SHIPMENT_STATUS.IN_TRANSIT,
+      })
     ).rejects.toThrow(ShipmentNotFoundError);
   });
 
@@ -54,13 +58,13 @@ describe('UpdateShipmentStatusUseCase', () => {
         destinatario: 'Bob',
         direccion_destino: 'Street 1',
         peso: 1,
-        estado: 'REGISTRADO',
+        estado: SHIPMENT_STATUS.REGISTERED,
         fecha_creacion: new Date(),
         fecha_actualizacion: new Date(),
       }),
       updateStatusByTrackingCode: vi.fn().mockResolvedValue({
         codigo_tracking: 'TRK-1',
-        estado: 'EN_TRANSITO',
+        estado: SHIPMENT_STATUS.IN_TRANSIT,
       }),
       withTransaction: vi.fn((handler) => handler(queryExecutor)),
     };
@@ -74,14 +78,14 @@ describe('UpdateShipmentStatusUseCase', () => {
     );
     const result = await useCase.execute({
       trackingCode: 'TRK-1',
-      status: 'EN_TRANSITO',
+      status: SHIPMENT_STATUS.IN_TRANSIT,
       userId: 'user-123',
     });
 
     expect(repository.updateStatusByTrackingCode).toHaveBeenCalledWith(
       {
         trackingCode: 'TRK-1',
-        status: 'EN_TRANSITO',
+        status: SHIPMENT_STATUS.IN_TRANSIT,
       },
       queryExecutor
     );
@@ -92,11 +96,11 @@ describe('UpdateShipmentStatusUseCase', () => {
         entityType: 'SHIPMENT',
         entityId: 'TRK-1',
         metadata: {
-          status: 'EN_TRANSITO',
+          status: SHIPMENT_STATUS.IN_TRANSIT,
         },
       },
       queryExecutor
     );
-    expect(result.estado).toBe('EN_TRANSITO');
+    expect(result.estado).toBe(SHIPMENT_STATUS.IN_TRANSIT);
   });
 });

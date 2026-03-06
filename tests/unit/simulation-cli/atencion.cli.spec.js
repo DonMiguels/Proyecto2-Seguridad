@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as store from '../../../simulation-cli/lib/store.js';
 import { handleOption } from '../../../simulation-cli/hosts/atencion.cli.js';
+import { SHIPMENT_STATUS } from '../../../src/shared/config/shipment-status.config.js';
 import {
   createMockCli,
   getLogOutput,
@@ -26,7 +27,7 @@ describe('Host Atención CLI', () => {
     vi.spyOn(store, 'getShipmentByTracking').mockResolvedValue({
       envio: {
         codigo_tracking: 'TRK-AT-1',
-        estado: 'EN_TRANSITO',
+        estado: SHIPMENT_STATUS.IN_TRANSIT,
         direccion_destino: 'Street 123',
       },
     });
@@ -34,7 +35,7 @@ describe('Host Atención CLI', () => {
     await handleOption('1', cli, session);
 
     expect(getLogOutput(logSpy)).toContain('TRK-AT-1');
-    expect(getLogOutput(logSpy)).toContain('EN_TRANSITO');
+    expect(getLogOutput(logSpy)).toContain(SHIPMENT_STATUS.IN_TRANSIT);
   });
 
   it('debe marcar entregado con opción 2', async () => {
@@ -43,7 +44,7 @@ describe('Host Atención CLI', () => {
     vi.spyOn(store, 'updateShipmentStatus').mockResolvedValue({
       envio: {
         codigo_tracking: 'TRK-AT-2',
-        estado: 'ENTREGADO',
+        estado: SHIPMENT_STATUS.DELIVERED,
       },
     });
 
@@ -53,7 +54,7 @@ describe('Host Atención CLI', () => {
       expect.objectContaining({
         token: 'access-token',
         trackingCode: 'TRK-AT-2',
-        status: 'ENTREGADO',
+        status: SHIPMENT_STATUS.DELIVERED,
       })
     );
     expect(getLogOutput(logSpy)).toContain('Estado actualizado');
@@ -65,13 +66,13 @@ describe('Host Atención CLI', () => {
     vi.spyOn(store, 'updateShipmentStatus').mockResolvedValue({
       envio: {
         codigo_tracking: 'TRK-AT-3',
-        estado: 'CANCELADO',
+        estado: SHIPMENT_STATUS.CANCELED,
       },
     });
 
     await handleOption('3', cli, session);
 
-    expect(getLogOutput(logSpy)).toContain('CANCELADO');
+    expect(getLogOutput(logSpy)).toContain(SHIPMENT_STATUS.CANCELED);
   });
 
   it('debe rechazar operación sin sesión', async () => {

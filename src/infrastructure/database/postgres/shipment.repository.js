@@ -1,3 +1,25 @@
+import {
+  SHIPMENT_STATUS_SUMMARY_METRICS,
+} from '../../../shared/config/shipment-status.config.js';
+
+const SUMMARY_METRICS_SELECT = SHIPMENT_STATUS_SUMMARY_METRICS.map(
+  ({ status, alias }) => {
+    return `COUNT(*) FILTER (WHERE estado = '${status}')::int AS ${alias}`;
+  }
+).join(',\n      ');
+
+const SUMMARY_METRICS_DEFAULT = SHIPMENT_STATUS_SUMMARY_METRICS.reduce(
+  (accumulator, { alias }) => {
+    return {
+      ...accumulator,
+      [alias]: 0,
+    };
+  },
+  {
+    total: 0,
+  }
+);
+
 const QUERIES = {
   CREATE: `
     INSERT INTO envios (codigo_tracking, remitente, destinatario, direccion_destino, peso)
@@ -16,11 +38,7 @@ const QUERIES = {
   SUMMARY_METRICS: `
     SELECT
       COUNT(*)::int AS total,
-      COUNT(*) FILTER (WHERE estado = 'REGISTRADO')::int AS registrado,
-      COUNT(*) FILTER (WHERE estado = 'EN_TRANSITO')::int AS en_transito,
-      COUNT(*) FILTER (WHERE estado = 'EN_REPARTO')::int AS en_reparto,
-      COUNT(*) FILTER (WHERE estado = 'ENTREGADO')::int AS entregado,
-      COUNT(*) FILTER (WHERE estado = 'CANCELADO')::int AS cancelado
+      ${SUMMARY_METRICS_SELECT}
     FROM envios
   `,
 };
@@ -77,15 +95,6 @@ export class PostgresShipmentRepository {
 
   async getSummaryMetrics(queryExecutor = this.databasePool) {
     const result = await queryExecutor.query(QUERIES.SUMMARY_METRICS);
-    return (
-      result.rows[0] || {
-        total: 0,
-        registrado: 0,
-        en_transito: 0,
-        en_reparto: 0,
-        entregado: 0,
-        cancelado: 0,
-      }
-    );
+    return result.rows[0] || SUMMARY_METRICS_DEFAULT;
   }
 }

@@ -11,6 +11,7 @@ export const createV1ShipmentRoutes = (
   const createRole = middlewares.createRole || noopMiddleware;
   const updateRole = middlewares.updateRole || noopMiddleware;
 
+  router.get('/shipments/statuses', shipmentController.getShipmentStatuses);
   router.post(
     '/shipments',
     auth,

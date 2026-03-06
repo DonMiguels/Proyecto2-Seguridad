@@ -1,30 +1,13 @@
-export const SHIPMENT_STATUS = Object.freeze({
-  REGISTERED: 'REGISTRADO',
-  IN_TRANSIT: 'EN_TRANSITO',
-  OUT_FOR_DELIVERY: 'EN_REPARTO',
-  DELIVERED: 'ENTREGADO',
-  CANCELED: 'CANCELADO',
-});
+import {
+  SHIPMENT_ALLOWED_TRANSITIONS,
+  SHIPMENT_STATUS,
+  SHIPMENT_STATUS_VALUES,
+} from '../../shared/config/shipment-status.config.js';
 
-const ALLOWED_TRANSITIONS = Object.freeze({
-  [SHIPMENT_STATUS.REGISTERED]: [
-    SHIPMENT_STATUS.IN_TRANSIT,
-    SHIPMENT_STATUS.CANCELED,
-  ],
-  [SHIPMENT_STATUS.IN_TRANSIT]: [
-    SHIPMENT_STATUS.OUT_FOR_DELIVERY,
-    SHIPMENT_STATUS.CANCELED,
-  ],
-  [SHIPMENT_STATUS.OUT_FOR_DELIVERY]: [
-    SHIPMENT_STATUS.DELIVERED,
-    SHIPMENT_STATUS.CANCELED,
-  ],
-  [SHIPMENT_STATUS.DELIVERED]: [],
-  [SHIPMENT_STATUS.CANCELED]: [],
-});
+export { SHIPMENT_STATUS };
 
 export const isValidShipmentStatus = (status) => {
-  return Object.values(SHIPMENT_STATUS).includes(status);
+  return SHIPMENT_STATUS_VALUES.includes(status);
 };
 
 export const canTransitionShipmentStatus = (currentStatus, nextStatus) => {
@@ -32,6 +15,6 @@ export const canTransitionShipmentStatus = (currentStatus, nextStatus) => {
     return true;
   }
 
-  const allowedStatuses = ALLOWED_TRANSITIONS[currentStatus] || [];
+  const allowedStatuses = SHIPMENT_ALLOWED_TRANSITIONS[currentStatus] || [];
   return allowedStatuses.includes(nextStatus);
 };

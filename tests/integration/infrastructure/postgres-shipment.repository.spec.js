@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { newDb } from 'pg-mem';
 import { PostgresShipmentRepository } from '../../../src/infrastructure/database/postgres/shipment.repository.js';
+import { SHIPMENT_STATUS } from '../../../src/shared/config/shipment-status.config.js';
 
 describe('PostgresShipmentRepository integration', () => {
   let repository;
@@ -15,7 +16,7 @@ describe('PostgresShipmentRepository integration', () => {
         destinatario VARCHAR(150) NOT NULL,
         direccion_destino VARCHAR(255) NOT NULL,
         peso NUMERIC(10,2) NOT NULL CHECK (peso > 0),
-        estado VARCHAR(20) NOT NULL DEFAULT 'REGISTRADO',
+        estado VARCHAR(20) NOT NULL DEFAULT '${SHIPMENT_STATUS.REGISTERED}',
         fecha_creacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
         fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -39,7 +40,7 @@ describe('PostgresShipmentRepository integration', () => {
 
     expect(found).not.toBeNull();
     expect(found.codigo_tracking).toBe('TRK-INT-0001');
-    expect(found.estado).toBe('REGISTRADO');
+    expect(found.estado).toBe(SHIPMENT_STATUS.REGISTERED);
   });
 
   it('should update shipment status', async () => {
@@ -53,10 +54,10 @@ describe('PostgresShipmentRepository integration', () => {
 
     const updated = await repository.updateStatusByTrackingCode({
       trackingCode: 'TRK-INT-0002',
-      status: 'EN_TRANSITO',
+      status: SHIPMENT_STATUS.IN_TRANSIT,
     });
 
     expect(updated).not.toBeNull();
-    expect(updated.estado).toBe('EN_TRANSITO');
+    expect(updated.estado).toBe(SHIPMENT_STATUS.IN_TRANSIT);
   });
 });

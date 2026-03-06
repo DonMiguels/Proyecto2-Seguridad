@@ -32,43 +32,10 @@ function createDefaultCli() {
 }
 
 export async function obtenerMetricas(session) {
-  if (!session?.accessToken) {
-    const [shipments, sales, tickets] = await Promise.all([
-      readJson(dataFile('shipments.json'), []),
-      readJson(dataFile('sales.json'), []),
-      readJson(dataFile('tickets.json'), []),
-    ]);
-
-    return {
-      enviosTotales: shipments.length,
-      enviosLiberados: shipments.filter((item) => item.estado === 'LIBERADO')
-        .length,
-      ventasTotales: sales.length,
-      facturacion: sales.reduce(
-        (accumulator, item) => accumulator + Number(item.precio || 0),
-        0
-      ),
-      incidenciasAbiertas: tickets.filter((item) => item.estado === 'ABIERTO')
-        .length,
-    };
-  }
-
   return getAdminMetrics({ token: session.accessToken });
 }
 
 export async function verMetricas(session) {
-  if (!session?.accessToken) {
-    const metricas = await obtenerMetricas(session);
-
-    console.log('\n=== Métricas Globales ===');
-    console.log(`Envíos totales: ${metricas.enviosTotales}`);
-    console.log(`Envíos liberados: ${metricas.enviosLiberados}`);
-    console.log(`Ventas totales: ${metricas.ventasTotales}`);
-    console.log(`Facturación simulada: $${metricas.facturacion}`);
-    console.log(`Incidencias abiertas: ${metricas.incidenciasAbiertas}\n`);
-    return;
-  }
-
   const { metricas } = await obtenerMetricas(session);
 
   console.log('\n=== Métricas Globales ===');
@@ -81,22 +48,6 @@ export async function verMetricas(session) {
 }
 
 export async function verActividadReciente(session) {
-  if (!session?.accessToken) {
-    const events = await readJson(dataFile('events.json'), []);
-
-    console.log('\n=== Actividad Reciente ===');
-    if (events.length === 0) {
-      console.log('Sin actividad registrada aún.\n');
-      return;
-    }
-
-    events.slice(-20).forEach((event) => {
-      console.log(`${event.at} | ${event.source} | ${event.type}`);
-    });
-    console.log();
-    return;
-  }
-
   const { actividad } = await getAdminActivity({
     token: session.accessToken,
     limit: 20,
@@ -268,10 +219,10 @@ export async function handleOption(option, session = null, cliInstance = null) {
     await buscarTracking(cliInstance, session);
   } else if (option === '4') {
     await forzarEstado(cliInstance, session);
-  } else if (option === '6' && !session?.accessToken) {
+  } else if (option === '6') {
     const username = await cliInstance.ask('Usuario a filtrar: ');
     await verEventosSeguridadPorUsuario(username);
-  } else if (option === '7' && !session?.accessToken) {
+  } else if (option === '7') {
     const filter = await cliInstance.ask(
       'Filtro (todos/fallidos/denegaciones): '
     );

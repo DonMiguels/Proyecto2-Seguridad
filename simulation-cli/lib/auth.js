@@ -10,14 +10,14 @@ export const printOptionsList = (options) => {
 
 export const ensureCliRole = async (
   session,
-  { allowedRoles = [], actionLabel, hostName = 'unknown-host' }
+  { allowedRoles = [], actionLabel }
 ) => {
-  if (!Array.isArray(allowedRoles) || allowedRoles.length === 0) {
-    return true;
+  if (!session?.accessToken || !session?.role) {
+    console.log(`\n✖ Debe autenticarse para ${actionLabel}.\n`);
+    return false;
   }
 
-  // Mantiene compatibilidad con tests unitarios que invocan acciones sin sesión.
-  if (!session || !session.role) {
+  if (!Array.isArray(allowedRoles) || allowedRoles.length === 0) {
     return true;
   }
 

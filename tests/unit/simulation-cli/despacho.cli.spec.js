@@ -1,62 +1,77 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readJson } from '../../../simulation-cli/lib/store.js';
+import * as store from '../../../simulation-cli/lib/store.js';
 import { handleOption } from '../../../simulation-cli/hosts/despacho.cli.js';
 import {
   createMockCli,
-  createSimulationTempDir,
   getLogOutput,
   mockConsoleLog,
-  removeSimulationTempDir,
 } from '../../helpers/simulation-cli-test.utils.js';
 
 describe('Host Despacho CLI', () => {
-  let tempDir;
+  const session = {
+    accessToken: 'access-token',
+    role: 'DESPACHO',
+    username: 'despacho',
+  };
 
-  beforeEach(async () => {
-    tempDir = await createSimulationTempDir();
-  });
+  beforeEach(async () => {});
 
   afterEach(async () => {
     vi.restoreAllMocks();
-    await removeSimulationTempDir(tempDir);
-    delete process.env.SIM_DATA_DIR;
   });
 
-  it('debe registrar un envío con opción 1', async () => {
-    const cli = createMockCli(['Alice', 'Bob']);
+  it('debe marcar en tránsito con opción 1', async () => {
+    const cli = createMockCli(['TRK-001']);
     const logSpy = mockConsoleLog();
+    vi.spyOn(store, 'updateShipmentStatus').mockResolvedValue({
+      envio: { codigo_tracking: 'TRK-001', estado: 'EN_TRANSITO' },
+    });
 
-    await handleOption('1', cli);
+    await handleOption('1', cli, session);
 
-    const shipments = await readJson(`${tempDir}/shipments.json`, []);
-    const events = await readJson(`${tempDir}/events.json`, []);
-
-    expect(shipments).toHaveLength(1);
-    expect(shipments[0].remitente).toBe('Alice');
-    expect(shipments[0].destinatario).toBe('Bob');
-    expect(shipments[0].estado).toBe('REGISTRADO');
-
-    expect(events).toHaveLength(1);
-    expect(events[0].type).toBe('shipment.created');
-
-    expect(getLogOutput(logSpy)).toContain('Envío registrado');
+    expect(store.updateShipmentStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        token: 'access-token',
+        trackingCode: 'TRK-001',
+        status: 'EN_TRANSITO',
+      })
+    );
+    expect(getLogOutput(logSpy)).toContain('Estado actualizado');
   });
 
-  it('debe informar error al liberar tracking inexistente', async () => {
-    const cli = createMockCli(['TRK-NO-EXISTE']);
+  it('debe consultar tracking con opción 3', async () => {
+    const cli = createMockCli(['TRK-123']);
     const logSpy = mockConsoleLog();
+    vi.spyOn(store, 'getShipmentByTracking').mockResolvedValue({
+      envio: {
+        codigo_tracking: 'TRK-123',
+        estado: 'EN_REPARTO',
+        remitente: 'Alice',
+        destinatario: 'Bob',
+      },
+    });
 
-    await handleOption('2', cli);
+    await handleOption('3', cli, session);
 
-    expect(getLogOutput(logSpy)).toContain('No existe ese tracking');
+    expect(getLogOutput(logSpy)).toContain('TRK-123');
+    expect(getLogOutput(logSpy)).toContain('EN_REPARTO');
   });
 
   it('debe informar opción inválida', async () => {
     const cli = createMockCli();
     const logSpy = mockConsoleLog();
 
-    await handleOption('999', cli);
+    await handleOption('999', cli, session);
 
     expect(getLogOutput(logSpy)).toContain('Opción inválida');
+  });
+
+  it('debe rechazar operación sin sesión', async () => {
+    const cli = createMockCli();
+    const logSpy = mockConsoleLog();
+
+    await handleOption('1', cli, null);
+
+    expect(getLogOutput(logSpy)).toContain('Debe autenticarse');
   });
 });

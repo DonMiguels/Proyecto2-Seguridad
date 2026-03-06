@@ -63,6 +63,8 @@ Implementación: [src/infrastructure/identity/ldap/ldap-auth.repository.js](../s
 ## 6. Gestión de secretos
 
 - Secretos de runtime se leen desde `secrets/*.txt` (montados como Docker secrets).
+- El backend usa cuenta técnica dedicada de bind (`cn=svc-backend,ou=ServiceAccounts,dc=empresa,dc=local`) con secreto `ldap_bind_password`.
+- La cuenta `cn=admin,...` queda reservada para administración LDAP y no se usa para autenticación de aplicación.
 - No se versionan secretos en VCS.
 - `userPassword` en LDIF está almacenado en hash SSHA (no texto plano).
 

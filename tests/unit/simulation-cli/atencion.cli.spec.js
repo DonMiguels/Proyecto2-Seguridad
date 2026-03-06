@@ -1,74 +1,85 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  appendJsonArray,
-  readJson,
-} from '../../../simulation-cli/lib/store.js';
+import * as store from '../../../simulation-cli/lib/store.js';
 import { handleOption } from '../../../simulation-cli/hosts/atencion.cli.js';
 import {
   createMockCli,
-  createSimulationTempDir,
   getLogOutput,
   mockConsoleLog,
-  removeSimulationTempDir,
 } from '../../helpers/simulation-cli-test.utils.js';
 
 describe('Host Atención CLI', () => {
-  let tempDir;
+  const session = {
+    accessToken: 'access-token',
+    role: 'ATENCION',
+    username: 'atencion',
+  };
 
-  beforeEach(async () => {
-    tempDir = await createSimulationTempDir();
-  });
+  beforeEach(async () => {});
 
   afterEach(async () => {
     vi.restoreAllMocks();
-    await removeSimulationTempDir(tempDir);
-    delete process.env.SIM_DATA_DIR;
   });
 
-  it('debe registrar incidencia con opción 1', async () => {
-    const cli = createMockCli(['Cliente QA', 'Paquete no recibido']);
+  it('debe consultar tracking con opción 1', async () => {
+    const cli = createMockCli(['TRK-AT-1']);
     const logSpy = mockConsoleLog();
-
-    await handleOption('1', cli);
-
-    const tickets = await readJson(`${tempDir}/tickets.json`, []);
-    const events = await readJson(`${tempDir}/events.json`, []);
-
-    expect(tickets).toHaveLength(1);
-    expect(tickets[0].cliente).toBe('Cliente QA');
-    expect(tickets[0].estado).toBe('ABIERTO');
-
-    expect(events).toHaveLength(1);
-    expect(events[0].type).toBe('ticket.created');
-
-    expect(getLogOutput(logSpy)).toContain('Incidencia registrada');
-  });
-
-  it('debe cerrar incidencia existente con opción 3', async () => {
-    await appendJsonArray(`${tempDir}/tickets.json`, {
-      id: 'TCK-001',
-      cliente: 'Cliente A',
-      detalle: 'Retraso',
-      estado: 'ABIERTO',
+    vi.spyOn(store, 'getShipmentByTracking').mockResolvedValue({
+      envio: {
+        codigo_tracking: 'TRK-AT-1',
+        estado: 'EN_TRANSITO',
+        direccion_destino: 'Street 123',
+      },
     });
 
-    const cli = createMockCli(['TCK-001']);
-    const logSpy = mockConsoleLog();
+    await handleOption('1', cli, session);
 
-    await handleOption('3', cli);
-
-    const tickets = await readJson(`${tempDir}/tickets.json`, []);
-
-    expect(tickets[0].estado).toBe('CERRADO');
-    expect(getLogOutput(logSpy)).toContain('cerrada');
+    expect(getLogOutput(logSpy)).toContain('TRK-AT-1');
+    expect(getLogOutput(logSpy)).toContain('EN_TRANSITO');
   });
 
-  it('debe informar cuando ticket no existe', async () => {
-    const cli = createMockCli(['TCK-404']);
+  it('debe marcar entregado con opción 2', async () => {
+    const cli = createMockCli(['TRK-AT-2']);
+    const logSpy = mockConsoleLog();
+    vi.spyOn(store, 'updateShipmentStatus').mockResolvedValue({
+      envio: {
+        codigo_tracking: 'TRK-AT-2',
+        estado: 'ENTREGADO',
+      },
+    });
+
+    await handleOption('2', cli, session);
+
+    expect(store.updateShipmentStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        token: 'access-token',
+        trackingCode: 'TRK-AT-2',
+        status: 'ENTREGADO',
+      })
+    );
+    expect(getLogOutput(logSpy)).toContain('Estado actualizado');
+  });
+
+  it('debe cancelar envío con opción 3', async () => {
+    const cli = createMockCli(['TRK-AT-3']);
+    const logSpy = mockConsoleLog();
+    vi.spyOn(store, 'updateShipmentStatus').mockResolvedValue({
+      envio: {
+        codigo_tracking: 'TRK-AT-3',
+        estado: 'CANCELADO',
+      },
+    });
+
+    await handleOption('3', cli, session);
+
+    expect(getLogOutput(logSpy)).toContain('CANCELADO');
+  });
+
+  it('debe rechazar operación sin sesión', async () => {
+    const cli = createMockCli();
     const logSpy = mockConsoleLog();
 
-    await handleOption('3', cli);
+    await handleOption('1', cli, null);
 
-    expect(getLogOutput(logSpy)).toContain('Ticket no encontrado');
+    expect(getLogOutput(logSpy)).toContain('Debe autenticarse');
   });
 });

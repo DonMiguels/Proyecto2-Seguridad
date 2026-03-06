@@ -16,6 +16,12 @@ Cada host:
 - solicita autenticación al iniciar,
 - valida permisos por rol antes de ejecutar operaciones.
 
+Modo estricto aplicado:
+
+- no existe fallback local de operaciones sin sesión,
+- toda acción de negocio (consultas/mutaciones) requiere autenticación previa vía API (`/api/v1/auth/login`),
+- la sesión CLI se valida por JWT + rol en backend.
+
 Los hosts fueron endurecidos para ejecución persistente: ante errores de autenticación, el proceso no finaliza automáticamente y vuelve a solicitar credenciales.
 
 ---
@@ -116,6 +122,7 @@ Consume endpoints `/api/v1/admin/metrics`, `/api/v1/admin/activity` y endpoints 
 ## 5. Seguridad aplicada en CLI
 
 - Autenticación obligatoria por LDAP (a través de la API).
+- Sin operaciones de negocio en modo offline/local para empleados.
 - Autorización por rol en dos niveles:
   - backend (middleware JWT + role middleware),
   - host CLI (`ensureCliRole(...)`) para feedback inmediato.

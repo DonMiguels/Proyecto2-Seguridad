@@ -1,13 +1,9 @@
 import {
-  appendJsonArray,
   buildIdempotencyKey,
-  dataFile,
   getShipmentByTracking,
-  readJson,
   updateShipmentStatus,
-  writeJson,
 } from '../lib/store.js';
-import { createCli, nowIso, randomCode } from '../lib/cli.js';
+import { createCli } from '../lib/cli.js';
 import {
   authenticateCliUser,
   ensureCliRole,
@@ -27,32 +23,6 @@ const DESPACHO_OPTIONS = [
 ];
 
 export async function cambiarEstado(cliInstance, session, status) {
-  if (!session?.accessToken) {
-    const tracking = await cliInstance.ask('Tracking a liberar: ');
-    const shipmentsPath = dataFile('shipments.json');
-    const eventsPath = dataFile('events.json');
-    const shipments = await readJson(shipmentsPath, []);
-    const index = shipments.findIndex((item) => item.tracking === tracking);
-
-    if (index < 0) {
-      console.log('\n✖ No existe ese tracking.\n');
-      return;
-    }
-
-    shipments[index].estado = 'LIBERADO';
-    shipments[index].updatedAt = nowIso();
-    await writeJson(shipmentsPath, shipments);
-    await appendJsonArray(eventsPath, {
-      type: 'shipment.released',
-      source: 'despacho',
-      tracking,
-      at: nowIso(),
-    });
-
-    console.log(`\n✔ Mercancía liberada para ${tracking}.\n`);
-    return;
-  }
-
   const trackingCode = await cliInstance.ask('Tracking: ');
   const result = await updateShipmentStatus({
     token: session.accessToken,
@@ -67,24 +37,6 @@ export async function cambiarEstado(cliInstance, session, status) {
 }
 
 export async function consultarTracking(cliInstance, session) {
-  if (!session?.accessToken) {
-    const shipments = await readJson(dataFile('shipments.json'), []);
-
-    console.log('\n--- Envíos recientes ---');
-    if (shipments.length === 0) {
-      console.log('Sin envíos registrados.\n');
-      return;
-    }
-
-    shipments.slice(-10).forEach((envio) => {
-      console.log(
-        `${envio.tracking} | ${envio.estado} | ${envio.remitente} -> ${envio.destinatario}`
-      );
-    });
-    console.log();
-    return;
-  }
-
   const trackingCode = await cliInstance.ask('Código tracking: ');
   const result = await getShipmentByTracking({
     trackingCode,
@@ -110,37 +62,9 @@ export async function handleOption(option, cliInstance, session = null) {
   }
 
   if (option === '1') {
-    if (!session?.accessToken) {
-      const remitente = await cliInstance.ask('Remitente: ');
-      const destinatario = await cliInstance.ask('Destinatario: ');
-      const tracking = randomCode('TRK');
-      const shipmentsPath = dataFile('shipments.json');
-      const eventsPath = dataFile('events.json');
-
-      await appendJsonArray(shipmentsPath, {
-        tracking,
-        remitente,
-        destinatario,
-        estado: 'REGISTRADO',
-        updatedAt: nowIso(),
-      });
-      await appendJsonArray(eventsPath, {
-        type: 'shipment.created',
-        source: 'despacho',
-        tracking,
-        at: nowIso(),
-      });
-
-      console.log(`\n✔ Envío registrado: ${tracking}\n`);
-    } else {
-      await cambiarEstado(cliInstance, session, 'EN_TRANSITO');
-    }
+    await cambiarEstado(cliInstance, session, 'EN_TRANSITO');
   } else if (option === '2') {
-    if (!session?.accessToken) {
-      await cambiarEstado(cliInstance, session, 'LIBERADO');
-    } else {
-      await cambiarEstado(cliInstance, session, 'EN_REPARTO');
-    }
+    await cambiarEstado(cliInstance, session, 'EN_REPARTO');
   } else if (option === '3') {
     await consultarTracking(cliInstance, session);
   } else if (option === '0') {

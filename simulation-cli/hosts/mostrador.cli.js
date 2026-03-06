@@ -1,12 +1,9 @@
 import {
-  appendJsonArray,
   buildIdempotencyKey,
   createShipment,
-  dataFile,
   getShipmentByTracking,
-  readJson,
 } from '../lib/store.js';
-import { createCli, nowIso, randomCode } from '../lib/cli.js';
+import { createCli } from '../lib/cli.js';
 import {
   authenticateCliUser,
   ensureCliRole,
@@ -25,35 +22,6 @@ function createDefaultCli() {
 }
 
 export async function registrarEnvio(cliInstance, session) {
-  if (!session?.accessToken) {
-    const producto = await cliInstance.ask('Producto: ');
-    const precioInput = await cliInstance.ask('Precio: ');
-    const precio = Number(precioInput);
-
-    if (Number.isNaN(precio) || precio <= 0) {
-      console.log('\n✖ Precio inválido.\n');
-      return;
-    }
-
-    const sale = {
-      id: randomCode('SALE'),
-      producto,
-      precio,
-      at: nowIso(),
-    };
-
-    await appendJsonArray(dataFile('sales.json'), sale);
-    await appendJsonArray(dataFile('events.json'), {
-      type: 'sale.created',
-      source: 'mostrador',
-      saleId: sale.id,
-      at: nowIso(),
-    });
-
-    console.log(`\n✔ Venta registrada: ${sale.id}\n`);
-    return;
-  }
-
   const remitente = await cliInstance.ask('Remitente: ');
   const destinatario = await cliInstance.ask('Destinatario: ');
   const direccion_destino = await cliInstance.ask('Dirección destino: ');
@@ -74,28 +42,6 @@ export async function registrarEnvio(cliInstance, session) {
 }
 
 export async function consultarTracking(cliInstance, session) {
-  if (!session?.accessToken) {
-    const catalog = {
-      sobre: 55,
-      caja_pequena: 120,
-      caja_mediana: 180,
-      caja_grande: 260,
-    };
-
-    const item = await cliInstance.ask(
-      'Artículo (sobre/caja_pequena/caja_mediana/caja_grande): '
-    );
-    const price = catalog[item];
-
-    if (!price) {
-      console.log('\n✖ Artículo no encontrado.\n');
-      return;
-    }
-
-    console.log(`\nPrecio actual de ${item}: $${price}\n`);
-    return;
-  }
-
   const trackingCode = await cliInstance.ask('Código tracking: ');
   const result = await getShipmentByTracking({
     trackingCode,
@@ -126,21 +72,6 @@ export async function handleOption(option, cliInstance, session = null) {
     await registrarEnvio(cliInstance, session);
   } else if (option === '2') {
     await consultarTracking(cliInstance, session);
-  } else if (option === '3' && !session?.accessToken) {
-    const sales = await readJson(dataFile('sales.json'), []);
-
-    console.log('\n--- Ventas recientes ---');
-    if (sales.length === 0) {
-      console.log('Sin ventas registradas.\n');
-      return;
-    }
-
-    sales.slice(-10).forEach((sale) => {
-      console.log(
-        `${sale.id} | ${sale.producto} | $${sale.precio} | ${sale.at}`
-      );
-    });
-    console.log();
   } else if (option === '0') {
     console.log('\nHost en espera. Use Ctrl+p, Ctrl+q para desacoplarse.\n');
   } else {

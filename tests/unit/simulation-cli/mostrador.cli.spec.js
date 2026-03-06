@@ -1,61 +1,72 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { readJson } from '../../../simulation-cli/lib/store.js';
+import * as store from '../../../simulation-cli/lib/store.js';
 import { handleOption } from '../../../simulation-cli/hosts/mostrador.cli.js';
 import {
   createMockCli,
-  createSimulationTempDir,
   getLogOutput,
   mockConsoleLog,
-  removeSimulationTempDir,
 } from '../../helpers/simulation-cli-test.utils.js';
 
 describe('Host Mostrador CLI', () => {
-  let tempDir;
+  const session = {
+    accessToken: 'access-token',
+    role: 'MOSTRADOR',
+    username: 'mostrador',
+  };
 
-  beforeEach(async () => {
-    tempDir = await createSimulationTempDir();
-  });
+  beforeEach(async () => {});
 
   afterEach(async () => {
     vi.restoreAllMocks();
-    await removeSimulationTempDir(tempDir);
-    delete process.env.SIM_DATA_DIR;
   });
 
-  it('debe registrar una venta con opción 1', async () => {
-    const cli = createMockCli(['sobre', '120']);
+  it('debe registrar envío con opción 1', async () => {
+    const cli = createMockCli(['Alice', 'Bob', 'Street 1', '2.5']);
     const logSpy = mockConsoleLog();
+    vi.spyOn(store, 'createShipment').mockResolvedValue({
+      envio: { codigo_tracking: 'TRK-001' },
+    });
 
-    await handleOption('1', cli);
+    await handleOption('1', cli, session);
 
-    const sales = await readJson(`${tempDir}/sales.json`, []);
-    const events = await readJson(`${tempDir}/events.json`, []);
-
-    expect(sales).toHaveLength(1);
-    expect(sales[0].producto).toBe('sobre');
-    expect(sales[0].precio).toBe(120);
-
-    expect(events).toHaveLength(1);
-    expect(events[0].type).toBe('sale.created');
-
-    expect(getLogOutput(logSpy)).toContain('Venta registrada');
+    expect(store.createShipment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        token: 'access-token',
+        payload: expect.objectContaining({
+          remitente: 'Alice',
+          destinatario: 'Bob',
+          direccion_destino: 'Street 1',
+          peso: '2.5',
+        }),
+      })
+    );
+    expect(getLogOutput(logSpy)).toContain('Envío registrado');
   });
 
-  it('debe rechazar precio inválido', async () => {
-    const cli = createMockCli(['sobre', 'abc']);
+  it('debe consultar tracking con opción 2', async () => {
+    const cli = createMockCli(['TRK-XYZ']);
     const logSpy = mockConsoleLog();
+    vi.spyOn(store, 'getShipmentByTracking').mockResolvedValue({
+      envio: {
+        codigo_tracking: 'TRK-XYZ',
+        estado: 'REGISTRADO',
+        remitente: 'Alice',
+        destinatario: 'Bob',
+      },
+    });
 
-    await handleOption('1', cli);
+    await handleOption('2', cli, session);
 
-    expect(getLogOutput(logSpy)).toContain('Precio inválido');
+    expect(getLogOutput(logSpy)).toContain('TRK-XYZ');
+    expect(getLogOutput(logSpy)).toContain('REGISTRADO');
   });
 
-  it('debe responder cuando el artículo no existe', async () => {
-    const cli = createMockCli(['producto_que_no_existe']);
+  it('debe responder opción inválida', async () => {
+    const cli = createMockCli();
     const logSpy = mockConsoleLog();
 
-    await handleOption('2', cli);
+    await handleOption('999', cli, session);
 
-    expect(getLogOutput(logSpy)).toContain('Artículo no encontrado');
+    expect(getLogOutput(logSpy)).toContain('Opción inválida');
   });
 });

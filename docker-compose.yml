@@ -83,8 +83,8 @@ services:
       LDAP_URL: ${LDAP_URL:-ldaps://ldap:636}
       LDAP_BASE_DN: ${LDAP_BASE_DN:-dc=empresa,dc=local}
       LDAP_USER_ATTRIBUTE: ${LDAP_USER_ATTRIBUTE:-uid}
-      LDAP_BIND_DN: ${LDAP_BIND_DN}
-      LDAP_BIND_PASSWORD_FILE: /run/secrets/ldap_admin_password
+      LDAP_BIND_DN: ${LDAP_BIND_DN:-cn=svc-backend,ou=ServiceAccounts,dc=empresa,dc=local}
+      LDAP_BIND_PASSWORD_FILE: /run/secrets/ldap_bind_password
       LDAP_ROLE_MAPPING: ${LDAP_ROLE_MAPPING}
       LDAP_TLS_REJECT_UNAUTHORIZED: ${LDAP_TLS_REJECT_UNAUTHORIZED:-true}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
@@ -118,7 +118,7 @@ services:
     secrets:
       - jwt_secret
       - db_password
-      - ldap_admin_password
+      - ldap_bind_password
     healthcheck:
       test:
         [

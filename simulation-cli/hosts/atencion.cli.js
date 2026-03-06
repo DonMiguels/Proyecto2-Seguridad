@@ -1,13 +1,9 @@
 import {
-  appendJsonArray,
   buildIdempotencyKey,
-  dataFile,
   getShipmentByTracking,
-  readJson,
   updateShipmentStatus,
-  writeJson,
 } from '../lib/store.js';
-import { createCli, nowIso, randomCode } from '../lib/cli.js';
+import { createCli } from '../lib/cli.js';
 import {
   authenticateCliUser,
   ensureCliRole,
@@ -27,29 +23,6 @@ function createDefaultCli() {
 }
 
 export async function consultarTracking(cliInstance, session) {
-  if (!session?.accessToken) {
-    const cliente = await cliInstance.ask('Cliente: ');
-    const detalle = await cliInstance.ask('Detalle de la incidencia: ');
-    const ticket = {
-      id: randomCode('TCK'),
-      cliente,
-      detalle,
-      estado: 'ABIERTO',
-      at: nowIso(),
-    };
-
-    await appendJsonArray(dataFile('tickets.json'), ticket);
-    await appendJsonArray(dataFile('events.json'), {
-      type: 'ticket.created',
-      source: 'atencion-cliente',
-      ticketId: ticket.id,
-      at: nowIso(),
-    });
-
-    console.log(`\n✔ Incidencia registrada: ${ticket.id}\n`);
-    return;
-  }
-
   const trackingCode = await cliInstance.ask('Código tracking: ');
   const result = await getShipmentByTracking({
     trackingCode,
@@ -65,31 +38,6 @@ export async function consultarTracking(cliInstance, session) {
 }
 
 export async function actualizarEstado(cliInstance, session, status) {
-  if (!session?.accessToken) {
-    const ticketId = await cliInstance.ask('ID de incidencia a cerrar: ');
-    const ticketsPath = dataFile('tickets.json');
-    const tickets = await readJson(ticketsPath, []);
-    const index = tickets.findIndex((item) => item.id === ticketId);
-
-    if (index < 0) {
-      console.log('\n✖ Ticket no encontrado.\n');
-      return;
-    }
-
-    tickets[index].estado = 'CERRADO';
-    tickets[index].closedAt = nowIso();
-    await writeJson(ticketsPath, tickets);
-    await appendJsonArray(dataFile('events.json'), {
-      type: 'ticket.closed',
-      source: 'atencion-cliente',
-      ticketId,
-      at: nowIso(),
-    });
-
-    console.log(`\n✔ Incidencia ${ticketId} cerrada.\n`);
-    return;
-  }
-
   const trackingCode = await cliInstance.ask('Tracking: ');
   const result = await updateShipmentStatus({
     token: session.accessToken,
@@ -117,29 +65,9 @@ export async function handleOption(option, cliInstance, session = null) {
   if (option === '1') {
     await consultarTracking(cliInstance, session);
   } else if (option === '2') {
-    if (!session?.accessToken) {
-      const tickets = await readJson(dataFile('tickets.json'), []);
-
-      console.log('\n--- Incidencias abiertas ---');
-      const abiertas = tickets.filter((item) => item.estado === 'ABIERTO');
-      if (abiertas.length === 0) {
-        console.log('No hay incidencias abiertas.\n');
-        return;
-      }
-
-      abiertas.forEach((ticket) => {
-        console.log(`${ticket.id} | ${ticket.cliente} | ${ticket.detalle}`);
-      });
-      console.log();
-    } else {
-      await actualizarEstado(cliInstance, session, 'ENTREGADO');
-    }
+    await actualizarEstado(cliInstance, session, 'ENTREGADO');
   } else if (option === '3') {
-    if (!session?.accessToken) {
-      await actualizarEstado(cliInstance, session, 'CERRADO');
-    } else {
-      await actualizarEstado(cliInstance, session, 'CANCELADO');
-    }
+    await actualizarEstado(cliInstance, session, 'CANCELADO');
   } else if (option === '0') {
     console.log('\nHost en espera. Use Ctrl+p, Ctrl+q para desacoplarse.\n');
   } else {

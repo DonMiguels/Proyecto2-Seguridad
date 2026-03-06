@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs/promises';
 import { appendJsonArray } from '../../../simulation-cli/lib/store.js';
+import * as store from '../../../simulation-cli/lib/store.js';
 import {
   exportarEventosSeguridadCsv,
   handleOption,
@@ -21,6 +22,11 @@ import {
 
 describe('Host Admin CLI', () => {
   let tempDir;
+  const session = {
+    accessToken: 'access-token',
+    role: 'ADMIN',
+    username: 'admin',
+  };
 
   beforeEach(async () => {
     tempDir = await createSimulationTempDir();
@@ -33,36 +39,41 @@ describe('Host Admin CLI', () => {
   });
 
   it('debe calcular métricas globales', async () => {
-    await appendJsonArray(`${tempDir}/shipments.json`, { estado: 'LIBERADO' });
-    await appendJsonArray(`${tempDir}/shipments.json`, {
-      estado: 'REGISTRADO',
+    vi.spyOn(store, 'getAdminMetrics').mockResolvedValue({
+      metricas: {
+        total: 2,
+        registrado: 1,
+        enTransito: 1,
+        enReparto: 0,
+        entregado: 0,
+        cancelado: 0,
+      },
     });
-    await appendJsonArray(`${tempDir}/sales.json`, { precio: 100 });
-    await appendJsonArray(`${tempDir}/sales.json`, { precio: 50 });
-    await appendJsonArray(`${tempDir}/tickets.json`, { estado: 'ABIERTO' });
 
-    const metricas = await obtenerMetricas();
+    const metricas = await obtenerMetricas(session);
 
-    expect(metricas.enviosTotales).toBe(2);
-    expect(metricas.enviosLiberados).toBe(1);
-    expect(metricas.ventasTotales).toBe(2);
-    expect(metricas.facturacion).toBe(150);
-    expect(metricas.incidenciasAbiertas).toBe(1);
+    expect(metricas.metricas.total).toBe(2);
+    expect(store.getAdminMetrics).toHaveBeenCalledWith({ token: 'access-token' });
   });
 
   it('debe mostrar actividad reciente', async () => {
-    await appendJsonArray(`${tempDir}/events.json`, {
-      at: '2026-01-01T00:00:00.000Z',
-      source: 'mostrador',
-      type: 'sale.created',
+    vi.spyOn(store, 'getAdminActivity').mockResolvedValue({
+      actividad: [
+        {
+          fecha_creacion: '2026-01-01T00:00:00.000Z',
+          usuario_id: 'admin',
+          accion: 'UPDATE_SHIPMENT_STATUS',
+          entidad_id: 'TRK-001',
+        },
+      ],
     });
 
     const logSpy = mockConsoleLog();
 
-    await verActividadReciente();
+    await verActividadReciente(session);
 
     expect(getLogOutput(logSpy)).toContain('Actividad Reciente');
-    expect(getLogOutput(logSpy)).toContain('sale.created');
+    expect(getLogOutput(logSpy)).toContain('UPDATE_SHIPMENT_STATUS');
   });
 
   it('debe mostrar eventos de seguridad', async () => {
@@ -169,7 +180,7 @@ describe('Host Admin CLI', () => {
     const cli = createMockCli(['john']);
     const logSpy = mockConsoleLog();
 
-    await handleOption('6', null, cli);
+    await handleOption('6', session, cli);
 
     expect(getLogOutput(logSpy)).toContain('usuario: john');
   });
@@ -177,7 +188,7 @@ describe('Host Admin CLI', () => {
   it('debe informar opción inválida', async () => {
     const logSpy = mockConsoleLog();
 
-    await handleOption('xyz');
+    await handleOption('xyz', session);
 
     expect(getLogOutput(logSpy)).toContain('Opción inválida');
   });
@@ -217,10 +228,18 @@ describe('Host Admin CLI', () => {
     const cli = createMockCli(['fallidos']);
     const logSpy = mockConsoleLog();
 
-    await handleOption('7', null, cli);
+    await handleOption('7', session, cli);
 
     const output = getLogOutput(logSpy);
     expect(output).toContain('Exportación CSV');
     expect(output).toContain('Registros exportados: 1');
+  });
+
+  it('debe rechazar operación sin sesión', async () => {
+    const logSpy = mockConsoleLog();
+
+    await handleOption('1', null, createMockCli());
+
+    expect(getLogOutput(logSpy)).toContain('Debe autenticarse');
   });
 });

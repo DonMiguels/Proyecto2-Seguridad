@@ -1,6 +1,4 @@
-import {
-  SHIPMENT_STATUS_SUMMARY_METRICS,
-} from '../../../shared/config/shipment-status.config.js';
+import { SHIPMENT_STATUS_SUMMARY_METRICS } from '../../../shared/config/shipment-status.config.js';
 
 const SUMMARY_METRICS_SELECT = SHIPMENT_STATUS_SUMMARY_METRICS.map(
   ({ status, alias }) => {

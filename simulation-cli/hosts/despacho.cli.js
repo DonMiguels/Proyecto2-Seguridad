@@ -65,11 +65,7 @@ export async function handleOption(option, cliInstance, session = null) {
   if (option === '1') {
     await cambiarEstado(cliInstance, session, SHIPMENT_STATUS.IN_TRANSIT);
   } else if (option === '2') {
-    await cambiarEstado(
-      cliInstance,
-      session,
-      SHIPMENT_STATUS.OUT_FOR_DELIVERY
-    );
+    await cambiarEstado(cliInstance, session, SHIPMENT_STATUS.OUT_FOR_DELIVERY);
   } else if (option === '3') {
     await consultarTracking(cliInstance, session);
   } else if (option === '0') {

@@ -136,11 +136,12 @@ export async function handleOption(option, cliInstance, session = null) {
     }
 
     sales.slice(-10).forEach((sale) => {
-      console.log(`${sale.id} | ${sale.producto} | $${sale.precio} | ${sale.at}`);
+      console.log(
+        `${sale.id} | ${sale.producto} | $${sale.precio} | ${sale.at}`
+      );
     });
     console.log();
-  }
-  else if (option === '0') {
+  } else if (option === '0') {
     console.log('\nHost en espera. Use Ctrl+p, Ctrl+q para desacoplarse.\n');
   } else {
     console.log('\nOpción inválida.\n');

@@ -65,7 +65,8 @@ const requestJson = async (path, options = {}) => {
         idempotencyKey: options.idempotencyKey,
         withJsonBody: options.body !== undefined,
       }),
-      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      body:
+        options.body !== undefined ? JSON.stringify(options.body) : undefined,
     })
   );
 
@@ -130,10 +131,13 @@ export async function getAdminMetrics({ token }) {
 }
 
 export async function getAdminActivity({ token, limit = 20 }) {
-  return requestJson(`/admin/activity?limit=${Math.max(1, Number(limit) || 20)}`, {
-    method: 'GET',
-    token,
-  });
+  return requestJson(
+    `/admin/activity?limit=${Math.max(1, Number(limit) || 20)}`,
+    {
+      method: 'GET',
+      token,
+    }
+  );
 }
 
 // Legacy helpers (tests/backward compatibility). Runtime CLI no longer uses local JSON storage.

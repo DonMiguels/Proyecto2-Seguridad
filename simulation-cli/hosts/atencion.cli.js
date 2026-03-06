@@ -140,8 +140,7 @@ export async function handleOption(option, cliInstance, session = null) {
     } else {
       await actualizarEstado(cliInstance, session, 'CANCELADO');
     }
-  }
-  else if (option === '0') {
+  } else if (option === '0') {
     console.log('\nHost en espera. Use Ctrl+p, Ctrl+q para desacoplarse.\n');
   } else {
     console.log('\nOpción inválida.\n');

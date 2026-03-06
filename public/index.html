@@ -1,423 +1,503 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Red de Deliveries - Prueba de API</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        h1, h2 {
-            color: #333;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input, select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #007bff;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .response {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            border-radius: 4px;
-            padding: 15px;
-            margin-top: 15px;
-            white-space: pre-wrap;
-            font-family: monospace;
-        }
-        .success {
-            background-color: #d4edda;
-            border-color: #c3e6cb;
-            color: #155724;
-        }
-        .error {
-            background-color: #f8d7da;
-            border-color: #f5c6cb;
-            color: #721c24;
-        }
-        .status-chip {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .status-ok {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .status-off {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      h1,
+      h2 {
+        color: #333;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input,
+      select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      .response {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 15px;
+        margin-top: 15px;
+        white-space: pre-wrap;
+        font-family: monospace;
+      }
+      .success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+      }
+      .error {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+      }
+      .status-chip {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      .status-ok {
+        background-color: #d4edda;
+        color: #155724;
+      }
+      .status-off {
+        background-color: #f8d7da;
+        color: #721c24;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>🚚 Red de Deliveries - Prueba de API</h1>
 
     <div class="container">
-        <h2>Autenticación</h2>
-        <div id="authStatus" class="status-chip status-off">No autenticado</div>
-        <form id="loginForm">
-            <div class="form-group">
-                <label for="username">Usuario:</label>
-                <input type="text" id="username" name="username" placeholder="Ej: mostrador" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Contraseña:</label>
-                <input type="password" id="password" name="password" placeholder="••••••••" required>
-            </div>
-            <button type="submit">Iniciar sesión</button>
-            <button type="button" id="refreshSessionBtn">Refrescar sesión</button>
-            <button type="button" id="logoutBtn">Cerrar sesión</button>
-        </form>
-        <div id="authResponse" class="response" style="display: none;"></div>
-    </div>
-    
-    <div class="container">
-        <h2>Crear Nuevo Envío</h2>
-        <form id="crearEnvioForm">
-            <div class="form-group">
-                <label for="remitente">Remitente:</label>
-                <input type="text" id="remitente" name="remitente" required>
-            </div>
-            <div class="form-group">
-                <label for="destinatario">Destinatario:</label>
-                <input type="text" id="destinatario" name="destinatario" required>
-            </div>
-            <div class="form-group">
-                <label for="direccion_destino">Dirección de Destino:</label>
-                <input type="text" id="direccion_destino" name="direccion_destino" required>
-            </div>
-            <div class="form-group">
-                <label for="peso">Peso (kg):</label>
-                <input type="number" id="peso" name="peso" step="0.01" required>
-            </div>
-            <button type="submit">Crear Envío</button>
-        </form>
-        <div id="crearResponse" class="response" style="display: none;"></div>
+      <h2>Autenticación</h2>
+      <div id="authStatus" class="status-chip status-off">No autenticado</div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username">Usuario:</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            placeholder="Ej: mostrador"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="password">Contraseña:</label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            placeholder="••••••••"
+            required
+          />
+        </div>
+        <button type="submit">Iniciar sesión</button>
+        <button type="button" id="refreshSessionBtn">Refrescar sesión</button>
+        <button type="button" id="logoutBtn">Cerrar sesión</button>
+      </form>
+      <div id="authResponse" class="response" style="display: none"></div>
     </div>
 
     <div class="container">
-        <h2>Buscar Envío por Tracking</h2>
-        <form id="buscarEnvioForm">
-            <div class="form-group">
-                <label for="codigo_tracking">Código de Tracking:</label>
-                <input type="text" id="codigo_tracking" name="codigo_tracking" placeholder="Ej: TRK-ABC12345" required>
-            </div>
-            <button type="submit">Buscar Envío</button>
-        </form>
-        <div id="buscarResponse" class="response" style="display: none;"></div>
+      <h2>Crear Nuevo Envío</h2>
+      <form id="crearEnvioForm">
+        <div class="form-group">
+          <label for="remitente">Remitente:</label>
+          <input type="text" id="remitente" name="remitente" required />
+        </div>
+        <div class="form-group">
+          <label for="destinatario">Destinatario:</label>
+          <input type="text" id="destinatario" name="destinatario" required />
+        </div>
+        <div class="form-group">
+          <label for="direccion_destino">Dirección de Destino:</label>
+          <input
+            type="text"
+            id="direccion_destino"
+            name="direccion_destino"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="peso">Peso (kg):</label>
+          <input type="number" id="peso" name="peso" step="0.01" required />
+        </div>
+        <button type="submit">Crear Envío</button>
+      </form>
+      <div id="crearResponse" class="response" style="display: none"></div>
     </div>
 
     <div class="container">
-        <h2>Actualizar Estado de Envío</h2>
-        <form id="actualizarEstadoForm">
-            <div class="form-group">
-                <label for="codigo_tracking_update">Código de Tracking:</label>
-                <input type="text" id="codigo_tracking_update" name="codigo_tracking_update" placeholder="Ej: TRK-ABC12345" required>
-            </div>
-            <div class="form-group">
-                <label for="estado">Nuevo Estado:</label>
-                <select id="estado" name="estado" required>
-                    <option value="">Seleccionar estado...</option>
-                    <option value="REGISTRADO">REGISTRADO</option>
-                    <option value="EN_TRANSITO">EN_TRANSITO</option>
-                    <option value="EN_REPARTO">EN_REPARTO</option>
-                    <option value="ENTREGADO">ENTREGADO</option>
-                    <option value="CANCELADO">CANCELADO</option>
-                </select>
-            </div>
-            <button type="submit">Actualizar Estado</button>
-        </form>
-        <div id="actualizarResponse" class="response" style="display: none;"></div>
+      <h2>Buscar Envío por Tracking</h2>
+      <form id="buscarEnvioForm">
+        <div class="form-group">
+          <label for="codigo_tracking">Código de Tracking:</label>
+          <input
+            type="text"
+            id="codigo_tracking"
+            name="codigo_tracking"
+            placeholder="Ej: TRK-ABC12345"
+            required
+          />
+        </div>
+        <button type="submit">Buscar Envío</button>
+      </form>
+      <div id="buscarResponse" class="response" style="display: none"></div>
+    </div>
+
+    <div class="container">
+      <h2>Actualizar Estado de Envío</h2>
+      <form id="actualizarEstadoForm">
+        <div class="form-group">
+          <label for="codigo_tracking_update">Código de Tracking:</label>
+          <input
+            type="text"
+            id="codigo_tracking_update"
+            name="codigo_tracking_update"
+            placeholder="Ej: TRK-ABC12345"
+            required
+          />
+        </div>
+        <div class="form-group">
+          <label for="estado">Nuevo Estado:</label>
+          <select id="estado" name="estado" required>
+            <option value="">Seleccionar estado...</option>
+            <option value="REGISTRADO">REGISTRADO</option>
+            <option value="EN_TRANSITO">EN_TRANSITO</option>
+            <option value="EN_REPARTO">EN_REPARTO</option>
+            <option value="ENTREGADO">ENTREGADO</option>
+            <option value="CANCELADO">CANCELADO</option>
+          </select>
+        </div>
+        <button type="submit">Actualizar Estado</button>
+      </form>
+      <div id="actualizarResponse" class="response" style="display: none"></div>
     </div>
 
     <script>
-        const API_BASE = '/api';
-        const V1_API_BASE = '/api/v1';
+      const API_BASE = '/api';
+      const V1_API_BASE = '/api/v1';
 
-        const authState = {
-            accessToken: null,
-            refreshToken: null,
-            user: null,
+      const authState = {
+        accessToken: null,
+        refreshToken: null,
+        user: null,
+      };
+
+      function buildIdempotencyKey() {
+        if (window.crypto?.randomUUID) {
+          return window.crypto.randomUUID();
+        }
+
+        return `idem-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      }
+
+      function updateAuthStatus() {
+        const chip = document.getElementById('authStatus');
+
+        if (authState.accessToken) {
+          chip.className = 'status-chip status-ok';
+          const username = authState.user?.username || 'usuario';
+          const role = authState.user?.role || 'N/A';
+          chip.textContent = `Autenticado: ${username} (${role})`;
+          return;
+        }
+
+        chip.className = 'status-chip status-off';
+        chip.textContent = 'No autenticado';
+      }
+
+      function clearAuthState() {
+        authState.accessToken = null;
+        authState.refreshToken = null;
+        authState.user = null;
+        updateAuthStatus();
+      }
+
+      function getAuthHeaders({ withIdempotency = false } = {}) {
+        if (!authState.accessToken) {
+          throw new Error('Debe iniciar sesión para ejecutar esta operación');
+        }
+
+        const headers = {
+          Authorization: `Bearer ${authState.accessToken}`,
+          'Content-Type': 'application/json',
         };
 
-        function buildIdempotencyKey() {
-            if (window.crypto?.randomUUID) {
-                return window.crypto.randomUUID();
-            }
-
-            return `idem-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+        if (withIdempotency) {
+          headers['Idempotency-Key'] = buildIdempotencyKey();
         }
 
-        function updateAuthStatus() {
-            const chip = document.getElementById('authStatus');
+        return headers;
+      }
 
-            if (authState.accessToken) {
-                chip.className = 'status-chip status-ok';
-                const username = authState.user?.username || 'usuario';
-                const role = authState.user?.role || 'N/A';
-                chip.textContent = `Autenticado: ${username} (${role})`;
-                return;
-            }
+      // Función para mostrar respuestas
+      function showResponse(elementId, data, isSuccess = true) {
+        const element = document.getElementById(elementId);
+        element.style.display = 'block';
+        element.className = `response ${isSuccess ? 'success' : 'error'}`;
+        element.textContent = JSON.stringify(data, null, 2);
+      }
 
-            chip.className = 'status-chip status-off';
-            chip.textContent = 'No autenticado';
-        }
+      // Login
+      document
+        .getElementById('loginForm')
+        .addEventListener('submit', async (e) => {
+          e.preventDefault();
 
-        function clearAuthState() {
-            authState.accessToken = null;
-            authState.refreshToken = null;
-            authState.user = null;
-            updateAuthStatus();
-        }
+          const formData = new FormData(e.target);
+          const payload = {
+            username: formData.get('username'),
+            password: formData.get('password'),
+          };
 
-        function getAuthHeaders({ withIdempotency = false } = {}) {
-            if (!authState.accessToken) {
-                throw new Error('Debe iniciar sesión para ejecutar esta operación');
-            }
-
-            const headers = {
-                Authorization: `Bearer ${authState.accessToken}`,
+          try {
+            const response = await fetch(`${V1_API_BASE}/auth/login`, {
+              method: 'POST',
+              headers: {
                 'Content-Type': 'application/json',
-            };
+              },
+              body: JSON.stringify(payload),
+            });
 
-            if (withIdempotency) {
-                headers['Idempotency-Key'] = buildIdempotencyKey();
+            const result = await response.json();
+
+            if (!response.ok) {
+              clearAuthState();
+              showResponse('authResponse', result, false);
+              return;
             }
 
-            return headers;
-        }
-
-        // Función para mostrar respuestas
-        function showResponse(elementId, data, isSuccess = true) {
-            const element = document.getElementById(elementId);
-            element.style.display = 'block';
-            element.className = `response ${isSuccess ? 'success' : 'error'}`;
-            element.textContent = JSON.stringify(data, null, 2);
-        }
-
-        // Login
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const formData = new FormData(e.target);
-            const payload = {
-                username: formData.get('username'),
-                password: formData.get('password'),
-            };
-
-            try {
-                const response = await fetch(`${V1_API_BASE}/auth/login`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload),
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    clearAuthState();
-                    showResponse('authResponse', result, false);
-                    return;
-                }
-
-                authState.accessToken = result.accessToken;
-                authState.refreshToken = result.refreshToken;
-                authState.user = result.user;
-                updateAuthStatus();
-                showResponse('authResponse', result, true);
-            } catch (error) {
-                clearAuthState();
-                showResponse('authResponse', { error: 'Error de conexión: ' + error.message }, false);
-            }
+            authState.accessToken = result.accessToken;
+            authState.refreshToken = result.refreshToken;
+            authState.user = result.user;
+            updateAuthStatus();
+            showResponse('authResponse', result, true);
+          } catch (error) {
+            clearAuthState();
+            showResponse(
+              'authResponse',
+              { error: 'Error de conexión: ' + error.message },
+              false
+            );
+          }
         });
 
-        // Refresh
-        document.getElementById('refreshSessionBtn').addEventListener('click', async () => {
-            if (!authState.refreshToken) {
-                showResponse('authResponse', { error: 'No hay refreshToken disponible' }, false);
-                return;
+      // Refresh
+      document
+        .getElementById('refreshSessionBtn')
+        .addEventListener('click', async () => {
+          if (!authState.refreshToken) {
+            showResponse(
+              'authResponse',
+              { error: 'No hay refreshToken disponible' },
+              false
+            );
+            return;
+          }
+
+          try {
+            const response = await fetch(`${V1_API_BASE}/auth/refresh`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ refreshToken: authState.refreshToken }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+              clearAuthState();
+              showResponse('authResponse', result, false);
+              return;
             }
 
-            try {
-                const response = await fetch(`${V1_API_BASE}/auth/refresh`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ refreshToken: authState.refreshToken }),
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    clearAuthState();
-                    showResponse('authResponse', result, false);
-                    return;
-                }
-
-                authState.accessToken = result.accessToken;
-                authState.refreshToken = result.refreshToken;
-                authState.user = result.user;
-                updateAuthStatus();
-                showResponse('authResponse', result, true);
-            } catch (error) {
-                showResponse('authResponse', { error: 'Error de conexión: ' + error.message }, false);
-            }
+            authState.accessToken = result.accessToken;
+            authState.refreshToken = result.refreshToken;
+            authState.user = result.user;
+            updateAuthStatus();
+            showResponse('authResponse', result, true);
+          } catch (error) {
+            showResponse(
+              'authResponse',
+              { error: 'Error de conexión: ' + error.message },
+              false
+            );
+          }
         });
 
-        // Logout
-        document.getElementById('logoutBtn').addEventListener('click', async () => {
-            if (!authState.refreshToken) {
-                clearAuthState();
-                showResponse('authResponse', { message: 'Sesión local cerrada' }, true);
-                return;
-            }
+      // Logout
+      document
+        .getElementById('logoutBtn')
+        .addEventListener('click', async () => {
+          if (!authState.refreshToken) {
+            clearAuthState();
+            showResponse(
+              'authResponse',
+              { message: 'Sesión local cerrada' },
+              true
+            );
+            return;
+          }
 
-            try {
-                const response = await fetch(`${V1_API_BASE}/auth/logout`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(authState.accessToken
-                            ? { Authorization: `Bearer ${authState.accessToken}` }
-                            : {}),
-                    },
-                    body: JSON.stringify({ refreshToken: authState.refreshToken }),
-                });
+          try {
+            const response = await fetch(`${V1_API_BASE}/auth/logout`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(authState.accessToken
+                  ? { Authorization: `Bearer ${authState.accessToken}` }
+                  : {}),
+              },
+              body: JSON.stringify({ refreshToken: authState.refreshToken }),
+            });
 
-                const result = await response.json();
-                clearAuthState();
-                showResponse('authResponse', result, response.ok);
-            } catch (error) {
-                clearAuthState();
-                showResponse('authResponse', { error: 'Error de conexión: ' + error.message }, false);
-            }
+            const result = await response.json();
+            clearAuthState();
+            showResponse('authResponse', result, response.ok);
+          } catch (error) {
+            clearAuthState();
+            showResponse(
+              'authResponse',
+              { error: 'Error de conexión: ' + error.message },
+              false
+            );
+          }
         });
 
-        // Crear Envío
-        document.getElementById('crearEnvioForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const data = {
-                remitente: formData.get('remitente'),
-                destinatario: formData.get('destinatario'),
-                direccion_destino: formData.get('direccion_destino'),
-                peso: parseFloat(formData.get('peso'))
-            };
+      // Crear Envío
+      document
+        .getElementById('crearEnvioForm')
+        .addEventListener('submit', async (e) => {
+          e.preventDefault();
 
-            try {
-                const response = await fetch(`${API_BASE}/envios`, {
-                    method: 'POST',
-                    headers: getAuthHeaders({ withIdempotency: true }),
-                    body: JSON.stringify(data)
-                });
+          const formData = new FormData(e.target);
+          const data = {
+            remitente: formData.get('remitente'),
+            destinatario: formData.get('destinatario'),
+            direccion_destino: formData.get('direccion_destino'),
+            peso: parseFloat(formData.get('peso')),
+          };
 
-                const result = await response.json();
-                
-                if (response.ok) {
-                    showResponse('crearResponse', result, true);
-                    e.target.reset();
-                } else {
-                    showResponse('crearResponse', result, false);
-                }
-            } catch (error) {
-                showResponse('crearResponse', { error: 'Error de conexión: ' + error.message }, false);
+          try {
+            const response = await fetch(`${API_BASE}/envios`, {
+              method: 'POST',
+              headers: getAuthHeaders({ withIdempotency: true }),
+              body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+              showResponse('crearResponse', result, true);
+              e.target.reset();
+            } else {
+              showResponse('crearResponse', result, false);
             }
+          } catch (error) {
+            showResponse(
+              'crearResponse',
+              { error: 'Error de conexión: ' + error.message },
+              false
+            );
+          }
         });
 
-        // Buscar Envío
-        document.getElementById('buscarEnvioForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const codigo = document.getElementById('codigo_tracking').value;
+      // Buscar Envío
+      document
+        .getElementById('buscarEnvioForm')
+        .addEventListener('submit', async (e) => {
+          e.preventDefault();
 
-            try {
-                const headers = authState.accessToken
-                    ? { Authorization: `Bearer ${authState.accessToken}` }
-                    : {};
-                const response = await fetch(`${API_BASE}/envios/${codigo}`, {
-                    headers,
-                });
-                const result = await response.json();
-                
-                if (response.ok) {
-                    showResponse('buscarResponse', result, true);
-                } else {
-                    showResponse('buscarResponse', result, false);
-                }
-            } catch (error) {
-                showResponse('buscarResponse', { error: 'Error de conexión: ' + error.message }, false);
+          const codigo = document.getElementById('codigo_tracking').value;
+
+          try {
+            const headers = authState.accessToken
+              ? { Authorization: `Bearer ${authState.accessToken}` }
+              : {};
+            const response = await fetch(`${API_BASE}/envios/${codigo}`, {
+              headers,
+            });
+            const result = await response.json();
+
+            if (response.ok) {
+              showResponse('buscarResponse', result, true);
+            } else {
+              showResponse('buscarResponse', result, false);
             }
+          } catch (error) {
+            showResponse(
+              'buscarResponse',
+              { error: 'Error de conexión: ' + error.message },
+              false
+            );
+          }
         });
 
-        // Actualizar Estado
-        document.getElementById('actualizarEstadoForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const codigo = document.getElementById('codigo_tracking_update').value;
-            const estado = document.getElementById('estado').value;
+      // Actualizar Estado
+      document
+        .getElementById('actualizarEstadoForm')
+        .addEventListener('submit', async (e) => {
+          e.preventDefault();
 
-            try {
-                const response = await fetch(`${API_BASE}/envios/${codigo}/estado`, {
-                    method: 'PUT',
-                    headers: getAuthHeaders({ withIdempotency: true }),
-                    body: JSON.stringify({ estado })
-                });
+          const codigo = document.getElementById(
+            'codigo_tracking_update'
+          ).value;
+          const estado = document.getElementById('estado').value;
 
-                const result = await response.json();
-                
-                if (response.ok) {
-                    showResponse('actualizarResponse', result, true);
-                    e.target.reset();
-                } else {
-                    showResponse('actualizarResponse', result, false);
-                }
-            } catch (error) {
-                showResponse('actualizarResponse', { error: 'Error de conexión: ' + error.message }, false);
+          try {
+            const response = await fetch(
+              `${API_BASE}/envios/${codigo}/estado`,
+              {
+                method: 'PUT',
+                headers: getAuthHeaders({ withIdempotency: true }),
+                body: JSON.stringify({ estado }),
+              }
+            );
+
+            const result = await response.json();
+
+            if (response.ok) {
+              showResponse('actualizarResponse', result, true);
+              e.target.reset();
+            } else {
+              showResponse('actualizarResponse', result, false);
             }
+          } catch (error) {
+            showResponse(
+              'actualizarResponse',
+              { error: 'Error de conexión: ' + error.message },
+              false
+            );
+          }
         });
 
-        updateAuthStatus();
+      updateAuthStatus();
     </script>
-</body>
+  </body>
 </html>

@@ -143,7 +143,9 @@ export async function forzarEstado(cliInstance, session) {
     idempotencyKey: buildIdempotencyKey(),
   });
 
-  console.log(`\n✔ Estado actualizado: ${envio.codigo_tracking} -> ${envio.estado}\n`);
+  console.log(
+    `\n✔ Estado actualizado: ${envio.codigo_tracking} -> ${envio.estado}\n`
+  );
 }
 
 const getSecurityEvents = async () => {
@@ -194,9 +196,13 @@ export async function verDenegacionesPorRol() {
 export async function verEventosSeguridadPorUsuario(username) {
   const events = await getSecurityEvents();
   const normalizedUsername = String(username || '').trim();
-  const filtered = events.filter((event) => event.username === normalizedUsername);
+  const filtered = events.filter(
+    (event) => event.username === normalizedUsername
+  );
 
-  console.log(`\n=== Eventos de Seguridad (usuario: ${normalizedUsername}) ===`);
+  console.log(
+    `\n=== Eventos de Seguridad (usuario: ${normalizedUsername}) ===`
+  );
   filtered.forEach((event) => {
     console.log(`${event.at} | ${event.type} | ${event.username || '-'}`);
   });
@@ -213,7 +219,15 @@ export async function exportarEventosSeguridadCsv(filter = 'todos') {
     filtered = events.filter((event) => event.type === 'authz.denied');
   }
 
-  const headers = ['at', 'source', 'type', 'username', 'role', 'reason', 'action'];
+  const headers = [
+    'at',
+    'source',
+    'type',
+    'username',
+    'role',
+    'reason',
+    'action',
+  ];
   const lines = [headers.join(',')];
 
   filtered.forEach((event) => {
@@ -258,7 +272,9 @@ export async function handleOption(option, session = null, cliInstance = null) {
     const username = await cliInstance.ask('Usuario a filtrar: ');
     await verEventosSeguridadPorUsuario(username);
   } else if (option === '7' && !session?.accessToken) {
-    const filter = await cliInstance.ask('Filtro (todos/fallidos/denegaciones): ');
+    const filter = await cliInstance.ask(
+      'Filtro (todos/fallidos/denegaciones): '
+    );
     const result = await exportarEventosSeguridadCsv(filter || 'todos');
     console.log(`\n=== Exportación CSV ===`);
     console.log(`Registros exportados: ${result.count}`);

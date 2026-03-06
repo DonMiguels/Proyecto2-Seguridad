@@ -143,8 +143,7 @@ export async function handleOption(option, cliInstance, session = null) {
     }
   } else if (option === '3') {
     await consultarTracking(cliInstance, session);
-  }
-  else if (option === '0') {
+  } else if (option === '0') {
     console.log('\nHost en espera. Use Ctrl+p, Ctrl+q para desacoplarse.\n');
   } else {
     console.log('\nOpción inválida.\n');

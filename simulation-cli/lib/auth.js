@@ -46,7 +46,9 @@ export async function authenticateCliUser(
 
   while (true) {
     const username = await cliInstance.ask('Usuario: ');
-    const password = await cliInstance.ask('Contraseña: ');
+    const password = cliInstance.askHidden
+      ? await cliInstance.askHidden('Contraseña: ')
+      : await cliInstance.ask('Contraseña: ');
 
     try {
       const authResult = await loginEmployee({ username, password });

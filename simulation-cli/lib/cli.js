@@ -13,6 +13,21 @@ export function createCli(title) {
     });
   }
 
+  function askHidden(question) {
+    return new Promise((resolve) => {
+      const originalWriteToOutput = rl._writeToOutput;
+
+      rl.output.write(question);
+      rl._writeToOutput = () => {};
+
+      rl.question('', (answer) => {
+        rl._writeToOutput = originalWriteToOutput;
+        rl.output.write('\n');
+        resolve(answer.trim());
+      });
+    });
+  }
+
   function printHeader() {
     console.clear();
     console.log(`=== ${title} ===`);
@@ -23,6 +38,7 @@ export function createCli(title) {
   return {
     rl,
     ask,
+    askHidden,
     printHeader,
     close: () => rl.close(),
   };

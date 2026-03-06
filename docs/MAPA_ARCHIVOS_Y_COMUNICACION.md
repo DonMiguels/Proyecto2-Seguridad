@@ -51,6 +51,7 @@ No detalla archivos internos de `.git` ni contenido sensible de secretos.
 - `vitest.config.js`: configuración de Vitest para specs Node.
 
 Comunicación clave:
+
 - `server.js` consume `src/app.js`, `src/config/database.js`, `src/shared/config/env.js` y `src/utils/logger.js`.
 - Compose conecta servicios por DNS interno (`backend`, `db`, `redis`, `ldap`, `host-*`).
 
@@ -61,6 +62,7 @@ Comunicación clave:
 - `database/init.sql`: crea tablas `envios`, `audit_logs`, `auth_refresh_tokens`, índices e inserta datos demo.
 
 Comunicación:
+
 - Es montado por `docker-compose.yml` en PostgreSQL para inicialización automática.
 - Repositorios PostgreSQL en `src/infrastructure/database/postgres/*` consumen este esquema.
 
@@ -72,6 +74,7 @@ Comunicación:
 - `frontend/nginx/default.conf`: servidor Nginx; enruta `/api/` al backend y sirve SPA estática.
 
 Comunicación:
+
 - Cliente externo → `frontend:8080`.
 - Nginx → `backend:3000/api/*` en red interna `app_net`.
 
@@ -94,6 +97,7 @@ Comunicación:
 - `ldap/certs/dhparam.pem`: parámetros Diffie-Hellman (fortalecimiento TLS).
 
 Comunicación:
+
 - `backend` usa `NODE_EXTRA_CA_CERTS` + `LDAP_TLS_REJECT_UNAUTHORIZED=true` para validación estricta de LDAPS.
 - `src/infrastructure/identity/ldap/ldap-auth.repository.js` hace bind/search/bind y deriva rol por grupos.
 
@@ -108,6 +112,7 @@ Comunicación:
 - `secrets/ldap_config_password.txt`: secreto de configuración LDAP.
 
 Comunicación:
+
 - `docker-compose.yml` monta secretos en `/run/secrets/*`.
 - `src/shared/config/env.js` resuelve `*_FILE` para obtener secretos en runtime.
 
@@ -130,6 +135,7 @@ Comunicación:
 - `store.js`: cliente HTTP al backend (`login`, `shipments`, `admin`) y utilidades auxiliares legacy para tests.
 
 Comunicación:
+
 - Hosts → `lib/auth.js` para sesión y autorización.
 - Hosts → `lib/store.js` para llamadas HTTP a `/api/v1/*`.
 - CLI se ejecuta dentro de contenedores `host-*` conectados a `app_net`.
@@ -146,6 +152,7 @@ Comunicación:
 - `src/utils/logger.js`: logger con timestamp configurable por offset.
 
 Comunicación:
+
 - `app.js` depende de `container.js`.
 - `container.js` conecta capas: infraestructura ↔ aplicación ↔ presentación.
 
@@ -157,6 +164,7 @@ Comunicación:
 - `src/domain/shipment/shipment.entity.js`: entidad `Shipment` y método `changeStatus` con invariantes.
 
 Comunicación:
+
 - Los casos de uso de `application` usan estas reglas y errores para decisiones de negocio.
 
 ## 9.3 Capa de aplicación (casos de uso)
@@ -169,6 +177,7 @@ Comunicación:
 - `src/application/shipment/update-shipment-status.use-case.js`: transición de estado + auditoría en transacción.
 
 Comunicación:
+
 - Casos de uso no conocen Express ni SQL directo; dependen de puertos/adaptadores inyectados.
 
 ## 9.4 Capa de infraestructura
@@ -194,6 +203,7 @@ Comunicación:
 - `src/infrastructure/identity/ldap/ldap-auth.repository.js`: autenticación LDAP estricta (bind/search/bind), extracción de `memberOf` y mapeo grupo→rol.
 
 Comunicación:
+
 - Repositorios son usados por casos de uso en `application`.
 - `LdapAuthRepository` es consumido por `AuthenticateUserUseCase`.
 
@@ -222,6 +232,7 @@ Comunicación:
 - `src/presentation/http/routes/legacy/envios.routes.js`: rutas envíos legacy bajo `/api`.
 
 Comunicación:
+
 - Rutas llaman a controladores.
 - Controladores invocan casos de uso o repositorios según su responsabilidad.
 - Middlewares se aplican antes de mutaciones/consultas protegidas.
@@ -233,6 +244,7 @@ Comunicación:
 - `src/queries/envios.queries.js`: export legacy hacia queries de infraestructura.
 
 Comunicación:
+
 - Mantiene compatibilidad histórica; la ruta principal actual está en `presentation/http`.
 
 ## 9.7 Configuración compartida y seguridad JWT
@@ -243,6 +255,7 @@ Comunicación:
 - `src/shared/security/jwt-token.service.js`: firma/verificación/decode de tokens de acceso y refresh.
 
 Comunicación:
+
 - `container.js` crea servicios JWT y los inyecta en casos de uso y middlewares.
 
 ---
@@ -279,6 +292,7 @@ Comunicación:
 - `tests/unit/simulation-cli/mostrador.cli.spec.js`: lógica del host mostrador.
 
 Comunicación:
+
 - Unit aísla funciones/componentes.
 - Integration verifica contratos entre capas adaptadoras, controladores y repositorios.
 
@@ -298,6 +312,7 @@ Comunicación:
 - `docs/TECHNICAL_DOCUMENTATION.md`: documentación técnica general consolidada.
 
 Comunicación:
+
 - Estos documentos trazan decisiones y contratos que implementan los archivos de `docker-compose`, `src/`, `simulation-cli/` y `ldap/`.
 
 ---

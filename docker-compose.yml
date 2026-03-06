@@ -176,8 +176,6 @@ services:
       start_period: 10s
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
     restart: unless-stopped
 
   ldap:
@@ -200,8 +198,8 @@ services:
     volumes:
       - ldap_data:/var/lib/ldap
       - ldap_config:/etc/ldap/slapd.d
-      - ./ldap/bootstrap/ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom:ro
-      - ./ldap/certs:/container/service/slapd/assets/certs:ro
+      - ./ldap/bootstrap/ldif:/container/service/slapd/assets/config/bootstrap/ldif/custom
+      - ./ldap/certs:/container/service/slapd/assets/certs
     networks:
       - identity_net
     secrets:
@@ -211,7 +209,7 @@ services:
       test:
         [
           'CMD-SHELL',
-          'LDAPTLS_CACERT=/container/service/slapd/assets/certs/ca.crt LDAPTLS_REQCERT=demand ldapsearch -x -H ldaps://127.0.0.1:636 -D "cn=admin,dc=empresa,dc=local" -y /run/secrets/ldap_admin_password -b "dc=empresa,dc=local" "(objectClass=*)" >/dev/null 2>&1',
+          'LDAPTLS_CACERT=/container/service/slapd/assets/certs/ca.crt LDAPTLS_REQCERT=demand ldapsearch -x -H ldaps://127.0.0.1:636 -s base -b "" "(objectClass=*)" >/dev/null 2>&1',
         ]
       interval: 10s
       timeout: 5s
@@ -219,8 +217,6 @@ services:
       start_period: 30s
     security_opt:
       - no-new-privileges:true
-    cap_drop:
-      - ALL
     restart: unless-stopped
 
   host-despacho:

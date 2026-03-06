@@ -18,7 +18,8 @@ import {
 import { pathToFileURL } from 'node:url';
 import {
   SHIPMENT_STATUS,
-  SHIPMENT_STATUS_LIST_TEXT,
+  SHIPMENT_STATUS_VALUES,
+  SHIPMENT_ALLOWED_TRANSITIONS
 } from '../../src/shared/config/shipment-status.config.js';
 
 const ADMIN_OPTIONS = [
@@ -88,18 +89,27 @@ export async function buscarTracking(cliInstance, session) {
 
 export async function forzarEstado(cliInstance, session) {
   const trackingCode = await cliInstance.ask('Tracking: ');
-  const status = await cliInstance.ask(
-    `Nuevo estado (${SHIPMENT_STATUS_LIST_TEXT}): `
+  const { envio } = await getShipmentByTracking({
+    trackingCode,
+    token: session.accessToken,
+  });
+  const currentStatus = envio.estado;
+  let allowedStatuses = SHIPMENT_STATUS_VALUES;
+  if (SHIPMENT_ALLOWED_TRANSITIONS[currentStatus]) {
+    allowedStatuses = SHIPMENT_ALLOWED_TRANSITIONS[currentStatus];
+  }
+  const status = await cliInstance.askSelect(
+    allowedStatuses,
+    `Seleccione nuevo estado (actual: ${currentStatus}): `
   );
-  const { envio } = await updateShipmentStatus({
+  const { envio: updated } = await updateShipmentStatus({
     token: session.accessToken,
     trackingCode,
     status,
     idempotencyKey: buildIdempotencyKey(),
   });
-
   console.log(
-    `\n✔ Estado actualizado: ${envio.codigo_tracking} -> ${envio.estado}\n`
+    `\n✔ Estado actualizado: ${updated.codigo_tracking} -> ${updated.estado}\n`
   );
 }
 

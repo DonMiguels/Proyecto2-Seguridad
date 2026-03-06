@@ -13,6 +13,30 @@ export function createCli(title) {
     });
   }
 
+  async function askSelect(options = [], question = 'Seleccione opción: ') {
+    if (!options.length) {
+      throw new Error('askSelect requiere opciones');
+    }
+
+    console.log('\nOpciones disponibles:');
+
+    options.forEach((opt, i) => {
+      console.log(`${i + 1}) ${opt}`);
+    });
+
+    while (true) {
+      const ans = await ask(question);
+
+      const index = Number(ans);
+
+      if (!Number.isNaN(index) && index >= 1 && index <= options.length) {
+        return options[index - 1];
+      }
+
+      console.log('Opción inválida. Intente nuevamente.');
+    }
+  }
+
   function printHeader() {
     console.clear();
     console.log(`=== ${title} ===`);
@@ -23,6 +47,7 @@ export function createCli(title) {
   return {
     rl,
     ask,
+    askSelect,
     printHeader,
     close: () => rl.close(),
   };

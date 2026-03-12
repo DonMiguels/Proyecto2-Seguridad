@@ -38,6 +38,16 @@ sn: Atencion
 cn: Operador Atencion
 userPassword: {SSHA}HuVEQmzNiJOnMHQayeYCKg4TmMDBrPz8
 
+dn: uid=cliente,ou=People,dc=empresa,dc=local
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+uid: cliente
+sn: Cliente
+cn: Cliente Tracking
+userPassword: {SSHA}Q/e3UptHk7CeN7N0xvC3iHa5v4drekBU
+
 dn: cn=svc-backend,ou=ServiceAccounts,dc=empresa,dc=local
 objectClass: simpleSecurityObject
 objectClass: organizationalRole

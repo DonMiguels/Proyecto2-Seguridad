@@ -29,3 +29,8 @@ dn: cn=atencion,ou=Groups,dc=empresa,dc=local
 objectClass: groupOfNames
 cn: atencion
 member: uid=atencion,ou=People,dc=empresa,dc=local
+
+dn: cn=consulta,ou=Groups,dc=empresa,dc=local
+objectClass: groupOfNames
+cn: consulta
+member: uid=cliente,ou=People,dc=empresa,dc=local

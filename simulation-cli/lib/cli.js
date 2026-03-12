@@ -1,9 +1,20 @@
 import readline from 'node:readline';
+import { Writable } from 'node:stream';
 
 export function createCli(title) {
+  const mutedOutput = new Writable({
+    write(chunk, encoding, callback) {
+      if (!mutedOutput.muted) {
+        process.stdout.write(chunk, encoding);
+      }
+      callback();
+    },
+  });
+  mutedOutput.muted = false;
+
   const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout,
+    output: mutedOutput,
     terminal: true,
   });
 
@@ -15,14 +26,12 @@ export function createCli(title) {
 
   function askHidden(question) {
     return new Promise((resolve) => {
-      const originalWriteToOutput = rl._writeToOutput;
-
-      rl.output.write(question);
-      rl._writeToOutput = () => {};
+      process.stdout.write(question);
+      mutedOutput.muted = true;
 
       rl.question('', (answer) => {
-        rl._writeToOutput = originalWriteToOutput;
-        rl.output.write('\n');
+        mutedOutput.muted = false;
+        process.stdout.write('\n');
         resolve(answer.trim());
       });
     });
